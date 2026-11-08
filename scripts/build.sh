@@ -6,7 +6,23 @@
 
 set -euo pipefail
 
+# Buildroot strictly rejects any spaces in PATH (common in WSL when Windows PATH is imported).
+# Filter out PATH entries containing spaces:
+CLEAN_PATH=""
+IFS=':' read -ra PATH_ENTRIES <<< "$PATH"
+for entry in "${PATH_ENTRIES[@]}"; do
+    if [[ "$entry" != *" "* ]]; then
+        if [ -z "$CLEAN_PATH" ]; then
+            CLEAN_PATH="$entry"
+        else
+            CLEAN_PATH="${CLEAN_PATH}:${entry}"
+        fi
+    fi
+done
+export PATH="$CLEAN_PATH"
+
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+export BR2_DL_DIR="${REPO_ROOT}/downloads"
 BR_DIR="${REPO_ROOT}/buildroot/buildroot-2025.02.10"
 OUTPUT_RPI4="${REPO_ROOT}/output"
 OUTPUT_QEMU="${REPO_ROOT}/output_qemu"
@@ -23,6 +39,8 @@ print_usage() {
     echo "Commands:"
     echo "  configure [rpi4|qemu]   Load defconfig into the out-of-tree output dir"
     echo "  check-config [rpi4|qemu] Print and verify core configuration variables"
+    echo "  build [rpi4|qemu] [jobs] Build target (default: 4 parallel jobs)"
+    echo "  run-qemu                Run QEMU emulation (for qemu target)"
     echo "  menuconfig [rpi4|qemu]  Open interactive Buildroot Kconfig menu"
     echo "  savedefconfig [rpi4]    Save current .config back to defconfig"
     echo "  clean [rpi4|qemu]       Remove output build directory"
@@ -79,6 +97,39 @@ case "$CMD" in
         echo "================================================================="
         grep -E 'BR2_ARCH=|BR2_cortex_a72=|BR2_TOOLCHAIN_BUILDROOT_GLIBC=|BR2_INIT_BUSYBOX=|BR2_TOOLCHAIN_BUILDROOT_CXX=|BR2_GCC_VERSION=' "$OUT_DIR/.config" || true
         echo "================================================================="
+        ;;
+
+    build)
+        check_buildroot
+        if [ ! -f "$OUT_DIR/.config" ]; then
+            $0 configure "$TARGET"
+        fi
+        JOBS="${3:-4}"
+        echo ">>> Building $TARGET_NAME using $JOBS parallel jobs..."
+        make -C "$BR_DIR" O="$OUT_DIR" -j"$JOBS"
+        echo ">>> Build completed successfully for $TARGET_NAME!"
+        ;;
+
+    run-qemu)
+        if [ ! -f "$OUTPUT_QEMU/images/Image" ] || [ ! -f "$OUTPUT_QEMU/images/rootfs.ext4" ]; then
+            echo "[ERROR] Kernel or rootfs image not found. Run '$0 build qemu' first."
+            exit 1
+        fi
+        echo ">>> Launching QEMU AArch64 Virt Emulation..."
+        echo ">>> (To exit QEMU at any time: Press 'Ctrl + A', release, then press 'X')"
+        echo ">>> Login with: root (no password required)"
+        echo "================================================================="
+        qemu-system-aarch64 \
+            -M virt \
+            -cpu cortex-a53 \
+            -nographic \
+            -smp 1 \
+            -kernel "$OUTPUT_QEMU/images/Image" \
+            -append "rootwait root=/dev/vda console=ttyAMA0" \
+            -netdev user,id=eth0 \
+            -device virtio-net-device,netdev=eth0 \
+            -drive file="$OUTPUT_QEMU/images/rootfs.ext4",if=none,format=raw,id=hd0 \
+            -device virtio-blk-device,drive=hd0
         ;;
 
     menuconfig)
