@@ -22,6 +22,14 @@ BR2_GLOBAL_PATCH_DIR="board/qemu/patches"
 BR2_DOWNLOAD_FORCE_CHECK_HASHES=y
 BR2_ROOTFS_POST_IMAGE_SCRIPT="board/qemu/post-image.sh"
 BR2_ROOTFS_POST_SCRIPT_ARGS="$(BR2_DEFCONFIG)"
+# Phase 4: Root FS Hardening
+# Overlay our custom rootfs/ files (fstab, inittab, S00overlay) on top of the target.
+# Path is relative to the Buildroot source tree root (buildroot/buildroot-2025.02.10/).
+BR2_ROOTFS_OVERLAY="../../rootfs"
+# Users table: creates edgeai (UID 1001, GID 1001, login locked).
+BR2_ROOTFS_USERS_TABLES="../../configs/users_table.txt"
+# Keep root filesystem read-only. The remount,rw line in inittab is commented out.
+# BR2_TARGET_GENERIC_REMOUNT_ROOTFS_RW is not set
 
 # Kernel Configuration
 BR2_LINUX_KERNEL=y

@@ -1,0 +1,9 @@
+# Buildroot users table for Edge ML Linux OS (Track A)
+# Format: username uid group gid password home shell groups comment
+# Ref: buildroot/buildroot-2025.02.10/docs/manual/makeusers-syntax.adoc
+#
+# password field:
+#   *  = login not allowed (account locked - appropriate for a service user)
+#   This prevents interactive shell login entirely.
+#
+edgeai 1001 edgeai 1001 * /home/edgeai /bin/sh - Edge_ML_User

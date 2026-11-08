@@ -1,0 +1,77 @@
+#!/bin/sh
+#
+# /etc/init.d/S00overlay
+# Edge ML Linux OS (Track A)
+#
+# Mounts an OverlayFS on /etc so that:
+#   - lowerdir = original read-only /etc from the rootfs partition
+#   - upperdir = writable RAM-backed tmpfs directory
+#   - workdir  = OverlayFS bookkeeping directory (also in RAM)
+#   - merged   = /etc (the visible, writeable /etc seen by all processes)
+#
+# This runs first (S00) so all subsequent init scripts see a writable /etc.
+# The root partition / remains strictly read-only at all times.
+#
+# Recovery path: if OverlayFS fails for any reason, we log the error and
+# continue with read-only /etc. The system will still boot and the serial
+# console will be accessible for diagnostics.
+#
+
+OVERLAY_BASE="/run/overlay"
+ETC_LOWER="${OVERLAY_BASE}/etc_lower"
+ETC_UPPER="${OVERLAY_BASE}/etc_upper"
+ETC_WORK="${OVERLAY_BASE}/etc_work"
+
+case "$1" in
+    start)
+        printf 'Setting up OverlayFS on /etc: '
+
+        # /run is already a tmpfs (mounted by 'mount -a' from fstab via inittab).
+        # Create the overlay working directories inside RAM.
+        mkdir -p "${ETC_LOWER}" "${ETC_UPPER}" "${ETC_WORK}"
+
+        # Bind-mount the original read-only /etc to a stable lower directory.
+        # We need a bind mount because overlayfs requires lowerdir to be a
+        # separate path from the mount point (/etc) itself.
+        if ! mount --bind /etc "${ETC_LOWER}"; then
+            echo "FAIL (bind mount)"
+            echo "[S00overlay] ERROR: Could not bind-mount /etc to ${ETC_LOWER}." >&2
+            echo "[S00overlay] Continuing with read-only /etc (recovery mode)." >&2
+            exit 0
+        fi
+
+        # Mount OverlayFS. After this succeeds, /etc shows the merged view:
+        # any file from lowerdir is visible; writes go to upperdir (RAM).
+        if ! mount -t overlay overlay \
+            -o "lowerdir=${ETC_LOWER},upperdir=${ETC_UPPER},workdir=${ETC_WORK}" \
+            /etc; then
+            echo "FAIL (overlayfs mount)"
+            echo "[S00overlay] ERROR: Could not mount OverlayFS on /etc." >&2
+            echo "[S00overlay] Unmounting bind mount and continuing with read-only /etc." >&2
+            umount "${ETC_LOWER}" 2>/dev/null || true
+            exit 0
+        fi
+
+        echo "OK"
+        ;;
+
+    stop)
+        printf 'Tearing down OverlayFS on /etc: '
+        # Unmount in reverse order: overlay first, then bind mount.
+        umount /etc 2>/dev/null || true
+        umount "${ETC_LOWER}" 2>/dev/null || true
+        echo "OK"
+        ;;
+
+    restart)
+        "$0" stop
+        "$0" start
+        ;;
+
+    *)
+        echo "Usage: $0 {start|stop|restart}"
+        exit 1
+        ;;
+esac
+
+exit 0
