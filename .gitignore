@@ -1,0 +1,19 @@
+# Build output directory
+output/*
+!output/.gitkeep
+
+# Buildroot extracted working tree (extracted from tarball)
+buildroot/buildroot-2025.02.10/
+
+# Download cache
+downloads/*
+!downloads/.gitkeep
+
+# Temporary and editor files
+*~
+*.swp
+*.bak
+*.tmp
+*.log
+.vscode/
+.idea/
