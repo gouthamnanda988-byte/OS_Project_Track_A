@@ -45,3 +45,7 @@ BR2_TARGET_ROOTFS_EXT2_4=y
 # BR2_TARGET_ROOTFS_TAR is not set
 
 # Host QEMU Tools
+
+# Phase 5: Machine Learning Runtime (TensorFlow Lite C++)
+BR2_PACKAGE_TENSORFLOW_LITE=y
+
