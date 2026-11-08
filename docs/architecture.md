@@ -1,190 +1,293 @@
 # System Architecture: Track A — Edge ML Linux OS
 
-**System:** Application-Specific Linux Distribution for ML Inference at the Edge  
-**Target:** Raspberry Pi 4 Model B (Broadcom BCM2711, Quad-core Cortex-A72 @ 1.5GHz, 4GB RAM)  
-**Date:** November 2026  
-**Status:** Approved (Phase 0)
+**Project Title:** Application-Specific Linux Distribution for ML Inference at the Edge  
+**Track:** Track A (Target: Raspberry Pi 4 Model B, 4GB RAM — ARM64)  
+**Document Version:** 1.0 (Phase 1: Requirements Analysis)  
+**Status:** Approved for Implementation  
+**Build System:** Buildroot 2025.02.10 LTS  
 
 ---
 
-## 1. High-Level Architectural Diagram
+## 1. End-to-End System Architecture
 
-```
-+-------------------------------------------------------------------------+
-|                  EDGE ML INFERENCE APPLICATION LAYER                    |
-|                                                                         |
-|  +--------------------+   +-----------------------+   +--------------+  |
-|  | C++ Preprocessor   |-->| TensorFlow Lite C++   |-->| Classification|  |
-|  | (stb_image/libjpeg)|   | Engine (XNNPACK/NEON) |   | Post-process |  |
-|  +--------------------+   +-----------------------+   +--------------+  |
-|               ^                       ^                                 |
-|               |                       | MobileNetV2 INT8 (~3.4MB)       |
-|       Input Frame / Image             +---------------------------      |
-|                                                                         |
-|  Executed by: Unprivileged User 'edgeai' (UID 1001, GID 1001)           |
-+-------------------------------------------------------------------------+
-                                    |
-+-------------------------------------------------------------------------+
-|                        USERSPACE & INIT LAYER                           |
-|                                                                         |
-|  BusyBox 1.36.x (/sbin/init)                                            |
-|  +-- /etc/inittab                                                       |
-|      +-- /etc/init.d/rcS                                                |
-|          +-- S01mountfs (proc, sysfs, devtmpfs, tmpfs on /tmp, /run)   |
-|          +-- S10overlay  (mounts overlayfs for /etc, /var if writeable) |
-|          +-- S99edge-inference (drop priv to edgeai, start ML daemon)   |
-|                                                                         |
-|  C Library: GNU C Library (glibc 2.40+)                                 |
-+-------------------------------------------------------------------------+
-                                    |
-+-------------------------------------------------------------------------+
-|                    VFS & FILESYSTEM MOUNT ARCHITECTURE                  |
-|                                                                         |
-|  +-------------------+  +-----------------------+  +-----------------+  |
-|  | / (Root Partition)|  | /tmp, /run, /var      |  | /data           |  |
-|  | Read-Only ext4 /  |  | Volatile tmpfs        |  | Writeable ext4  |  |
-|  | SquashFS (ro)     |  | (RAM-backed, no wear) |  | (logs/telemetry)|  |
-|  +-------------------+  +-----------------------+  +-----------------+  |
-|            \                        /                        /          |
-|             \                      /                        /           |
-|          OverlayFS: lowerdir=/etc (ro), upperdir=/data/etc (rw)         |
-+-------------------------------------------------------------------------+
-                                    |
-+-------------------------------------------------------------------------+
-|                         LINUX KERNEL LAYER                              |
-|                                                                         |
-|  Linux Kernel 6.6.y (ARM64 / AArch64)                                   |
-|  - Broadcom BCM2711 SoC Drivers (Clocks, Power, UART, SDHCI, DMA)       |
-|  - Memory Management: 4KB pages, slab allocator, cgroups                |
-|  - Block Layer & Drivers: MMC/SD card driver, OverlayFS, SquashFS, Ext4 |
-|  - In-tree Flattened Device Tree: bcm2711-rpi-4-b.dtb                   |
-+-------------------------------------------------------------------------+
-                                    |
-+-------------------------------------------------------------------------+
-|                     HARDWARE & FIRMWARE LAYER                           |
-|                                                                         |
-|  1. Broadcom BCM2711 On-Chip ROM (Loads bootloader EEPROM)              |
-|  2. Raspberry Pi 4 EEPROM Bootloader                                    |
-|  3. VideoCore VI Firmware: bootcode.bin, start4.elf                     |
-|  4. Hardware: 4x Cortex-A72 @ 1.5GHz (ARMv8-A + NEON), 4GB LPDDR4-3200  |
-+-------------------------------------------------------------------------+
-```
+The custom Edge ML Linux distribution is structured into distinct, decoupled architectural layers designed to ensure maximum determinism, minimal memory consumption, zero flash wear, and unprivileged ML execution.
 
----
+```mermaid
+flowchart TD
+    subgraph AppLayer ["Layer 5: Application & Edge ML Inference Layer"]
+        InferenceApp["Native C++ Engine: edge-classify"]
+        TFLiteRuntime["TensorFlow Lite / LiteRT C++ Runtime"]
+        XNNPACKEngine["XNNPACK SIMD Vector Engine"]
+        NEONKernels["ARM64 NEON Vectorized INT8 Kernels"]
+        ModelFlatBuffer["MobileNetV2 INT8 FlatBuffer (3.4 MB)"]
+        UserContext["Security Context: User edgeai (UID 1001, GID 1001)"]
+        
+        UserContext --> InferenceApp
+        InferenceApp --> TFLiteRuntime
+        TFLiteRuntime --> XNNPACKEngine
+        XNNPACKEngine --> NEONKernels
+        ModelFlatBuffer --> TFLiteRuntime
+    end
 
-## 2. Boot Flow Sequence & Timing Breakdown
+    subgraph UserSpace ["Layer 4: Userspace & Service Orchestration Layer"]
+        BusyBoxInit["BusyBox /sbin/init (PID 1)"]
+        Inittab["Configuration: /etc/inittab"]
+        SysInit["SysV rcS Script: /etc/init.d/rcS"]
+        S01Mount["S01mountfs (Mount devtmpfs, proc, sysfs, tmpfs)"]
+        S10Overlay["S10overlay (Mount OverlayFS on /etc)"]
+        S99Inference["S99edge-inference (Drop privileges, exec edge-classify)"]
+        CLibrary["GNU C Library: glibc 2.40+"]
+        
+        BusyBoxInit --> Inittab
+        Inittab --> SysInit
+        SysInit --> S01Mount
+        SysInit --> S10Overlay
+        SysInit --> S99Inference
+        S99Inference --> UserContext
+        InferenceApp -.-> CLibrary
+    end
 
-1. **Stage 1 — SoC ROM:**
-   - Power-on reset initializes the BCM2711. The primary on-chip boot ROM searches for the SPI EEPROM containing the stage-2 bootloader.
-2. **Stage 2 — SPI EEPROM:**
-   - The EEPROM bootloader initializes low-level hardware registers, LPDDR4 memory controllers, and the SD card controller (eMMC/SDHCI).
-   - Reads the FAT32 boot partition for `start4.elf` and `config.txt`.
-3. **Stage 3 — VideoCore Firmware (`start4.elf`):**
-   - Reads `config.txt` parameters (e.g. `arm_64bit=1`, `enable_uart=1`, `gpu_mem=64`).
-   - Loads the 64-bit Linux kernel image (`Image`) and Device Tree (`bcm2711-rpi-4-b.dtb`) into RAM.
-   - Passes kernel command-line arguments from `cmdline.txt`.
-   - Releases the ARM Cortex-A72 cores from reset at EL2/EL1.
-4. **Stage 4 — Linux Kernel Initialization:**
-   - Early architecture setup (MMU page tables, vector tables, interrupt controller GIC-400).
-   - Driver probing: Serial (`ttyAMA0`), Storage (`mmc0`), Timer, DMA.
-   - Mounts the root filesystem from `/dev/mmcblk0p2` in **read-only mode** (`ro`).
-   - Spawns PID 1 (`/sbin/init`).
-5. **Stage 5 — BusyBox Init & Userspace Orchestration:**
-   - `/sbin/init` reads `/etc/inittab`.
-   - Executes `/etc/init.d/rcS` sysinit script:
-     - Mounts essential virtual filesystems: `proc`, `sysfs`, `devtmpfs`.
-     - Mounts volatile RAM filesystems: `tmpfs` on `/tmp`, `/run`, and `/var/run`.
-     - Mounts `/data` (`/dev/mmcblk0p3`) if present.
-     - Mounts `overlayfs` on designated mutable directories (`/etc`).
-   - Invokes `/etc/init.d/S99edge-inference`:
-     - Changes UID/GID to unprivileged user `edgeai` (`su -s /bin/sh edgeai -c ...`).
-     - Launches the native C++ inference engine (`/usr/bin/edge-classify`).
-6. **Stage 6 — ML Inference Pipeline:**
-   - Pre-allocates model tensor memory buffers.
-   - Attaches XNNPACK delegate for NEON vector acceleration.
-   - Runs model inference on test images / camera stream.
+    subgraph StorageLayer ["Layer 3: Storage & Virtual Filesystem (VFS) Layer"]
+        VFS["Linux Virtual Filesystem (VFS)"]
+        RO_Root["Partition 2: RootFS (SquashFS / ext4, READ-ONLY)"]
+        Volatile_RAM["RAM tmpfs: /tmp, /run, /var"]
+        Data_Partition["Partition 3: Data (ext4, Writeable /data)"]
+        OverlayFS_Mount["OverlayFS Layer: merged=/etc, lowerdir=/etc (ro), upperdir=/data/etc"]
+        
+        VFS --> RO_Root
+        VFS --> Volatile_RAM
+        VFS --> Data_Partition
+        VFS --> OverlayFS_Mount
+    end
 
----
+    subgraph KernelLayer ["Layer 2: Linux Kernel Layer (ARM64)"]
+        LinuxKernel["Linux Kernel 6.6.y (bcm2711_defconfig stripped)"]
+        CoreDrivers["BCM2711 Platform Drivers (UART, Clocks, SDHCI MMC)"]
+        FSModules["Filesystem Drivers (SquashFS, OverlayFS, ext4)"]
+        PerfGovernor["CPUFreq Governor: Locked Performance Mode"]
+        DeviceTree["Device Tree: bcm2711-rpi-4-b.dtb"]
+        
+        LinuxKernel --> CoreDrivers
+        LinuxKernel --> FSModules
+        LinuxKernel --> PerfGovernor
+        DeviceTree --> LinuxKernel
+    end
 
-## 3. Filesystem & Storage Architecture
+    subgraph HardwareLayer ["Layer 1: Hardware & Low-Level Firmware"]
+        BootROM["Broadcom BCM2711 On-Chip Boot ROM"]
+        SPI_EEPROM["Raspberry Pi 4 SPI EEPROM Bootloader"]
+        VideoCoreFW["VideoCore VI Firmware (bootcode.bin, start4.elf)"]
+        HW_SoC["Broadcom BCM2711 SoC: 4x Cortex-A72 @ 1.5GHz (ARMv8-A + NEON)"]
+        HW_RAM["4 GB LPDDR4-3200 SDRAM"]
+        MicroSD["MicroSD Storage Medium (UHS-I Class 10)"]
+        
+        BootROM --> SPI_EEPROM
+        SPI_EEPROM --> VideoCoreFW
+        VideoCoreFW --> HW_SoC
+        HW_SoC --> HW_RAM
+        HW_SoC --> MicroSD
+    end
 
-### 3.1 Partition Scheme
-The SD card is partitioned into three distinct segments:
-
-| Partition | Label | Filesystem | Mount Point | Permissions | Content |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| `/dev/mmcblk0p1` | `BOOT` | FAT32 | `/boot` | `ro` | Firmware, Kernel `Image`, DTBs, `config.txt` |
-| `/dev/mmcblk0p2` | `ROOTFS` | ext4 / squashfs | `/` | `ro` | Immutable OS, libraries, ML runtime, model |
-| `/dev/mmcblk0p3` | `DATA` | ext4 | `/data` | `rw` | Persistent logs, benchmark metrics |
-
-### 3.2 OverlayFS Implementation
-To guarantee that root cannot be corrupted during unexpected power loss, the root filesystem remains mounted read-only at all times:
-- `lowerdir`: `/etc` (read-only base image).
-- `upperdir`: `/data/overlay/etc_upper` (or volatile `tmpfs/etc_upper`).
-- `workdir`: `/data/overlay/etc_work` (or volatile `tmpfs/etc_work`).
-- `merged`: `/etc`.
-
----
-
-## 4. Security & Privilege Separation
-
-1. **Unprivileged Execution:**
-   - Service user: `edgeai` (UID: 1001, GID: 1001, Home: `/home/edgeai`, Shell: `/bin/false`).
-   - The inference binary has no write permissions outside `/tmp` or `/data/logs`.
-   - File permissions:
-     - `/usr/bin/edge-classify`: `0755 root:root`
-     - `/usr/share/models/mobilenet_v2_int8.tflite`: `0644 root:root`
-     - `/data/logs`: `0775 edgeai:edgeai`
-2. **Network Attack Surface:**
-   - Production images have SSH, Telnet, and FTP disabled.
-   - No listening sockets in default operation.
-3. **Hardened Kernel Parameters:**
-   - Kernel command line includes: `security=selinux/smack` (or standard DAC with restricted sysctl: `kernel.kptr_restrict=2`, `kernel.dmesg_restrict=1`).
-
----
-
-## 5. Machine Learning Runtime Architecture
-
-```
-+--------------------------------------------------------------------------+
-|                  edge-classify (C++17 Executable)                       |
-|                                                                          |
-|  +--------------------------------------------------------------------+  |
-|  | Input Image Ingestion (224x224x3 RGB)                             |  |
-|  | - Read binary bitmap or pre-processed tensor buffer                |  |
-|  +--------------------------------------------------------------------+  |
-|                                 |                                        |
-|  +--------------------------------------------------------------------+  |
-|  | TFLite Model Loader & FlatBuffer Verifier                          |  |
-|  | - Loads /usr/share/models/mobilenet_v2_1.0_224_quant.tflite        |  |
-|  +--------------------------------------------------------------------+  |
-|                                 |                                        |
-|  +--------------------------------------------------------------------+  |
-|  | TFLite Interpreter + XNNPACK Delegate                              |  |
-|  | - SetNumThreads(4)                                                 |  |
-|  | - AllocateTensors()                                                |  |
-|  | - ARM64 NEON INT8 Vectorized Kernel Execution                      |  |
-|  +--------------------------------------------------------------------+  |
-|                                 |                                        |
-|  +--------------------------------------------------------------------+  |
-|  | Post-Processing & Top-K Classification Output                      |  |
-|  | - Softmax dequantization / Argmax selection                        |  |
-|  | - High-resolution benchmark timestamps: clock_gettime(MONOTONIC)   |  |
-|  +--------------------------------------------------------------------+  |
-+--------------------------------------------------------------------------+
+    HardwareLayer --> KernelLayer
+    KernelLayer --> StorageLayer
+    StorageLayer --> UserSpace
+    UserSpace --> AppLayer
 ```
 
 ---
 
-## 6. Buildroot Integration Strategy
+## 2. Boot Flow & State Progression
 
-Buildroot acts as the single orchestrator:
-1. Toolchain generation: `aarch64-buildroot-linux-gnu` with `glibc`.
-2. Packages:
-   - `package/tensorflow-lite` (includes `flatbuffers`, `cpuinfo`, `farmhash`, `fft2d`, `gemmlowp`, `libabseil-cpp`, `ruy`, `xnnpack`).
-   - Custom in-tree or external package for `edge-classify`.
-3. RootFS post-build script:
-   - Strips unneeded binaries, documentation, manpages, locales.
-   - Sets up `/etc/inittab`, user `edgeai`, and permissions.
-4. Genimage post-image script:
-   - Generates the complete ready-to-flash `sdcard.img` containing `boot.vfat` and `rootfs.ext4`.
+The boot architecture is engineered to bypass all unnecessary multi-user targets and run-level transitions, launching the ML inference pipeline directly into memory within a target cold-boot window of under 4.5 seconds.
+
+```mermaid
+flowchart TD
+    A["Power-On / Hardware Reset"] --> B["Stage 1: BCM2711 On-Chip ROM probes SPI EEPROM"]
+    B --> C["Stage 2: SPI EEPROM initializes LPDDR4 memory controller and MMC"]
+    C --> D["Stage 3: VideoCore VI executes start4.elf firmware from FAT32 boot partition"]
+    D --> E["Firmware loads config.txt, cmdline.txt, bcm2711-rpi-4-b.dtb, and kernel Image"]
+    E --> F["Firmware releases Cortex-A72 cores from reset at EL2"]
+    F --> G["Stage 4: Linux Kernel 6.6.y initializes MMU, GIC-400, timers, and SDHCI"]
+    G --> H["Kernel mounts RootFS partition /dev/mmcblk0p2 strictly READ-ONLY (ro)"]
+    H --> I["Kernel executes PID 1: /sbin/init (BusyBox)"]
+    I --> J["Stage 5: /sbin/init parses /etc/inittab and invokes /etc/init.d/rcS"]
+    J --> K["rcS mounts /proc, /sys, /dev, and tmpfs on /tmp and /run"]
+    K --> L["rcS initializes OverlayFS for mutable configuration state"]
+    L --> M["Stage 6: /etc/init.d/S99edge-inference drops privileges to user edgeai"]
+    M --> N["Executes native C++ binary /usr/bin/edge-classify"]
+    N --> O["TFLite maps model flatbuffer, binds XNNPACK delegate, allocates tensors"]
+    O --> P["Stage 7: Target Cold Boot Complete — 1st Inference Ready (< 4.5s Target)"]
+```
+
+---
+
+## 3. Storage Partitioning & OverlayFS Architecture
+
+To prevent filesystem degradation or data corruption during field power failures, the physical storage is segregated into three distinct partitions.
+
+```mermaid
+flowchart LR
+    subgraph PhysicalSD ["Physical MicroSD Storage Layout"]
+        P1["Partition 1: BOOT<br/>FAT32 (~64 MB)<br/>start4.elf, config.txt, cmdline.txt,<br/>Image, bcm2711-rpi-4-b.dtb"]
+        P2["Partition 2: ROOTFS<br/>SquashFS / ext4 (ro) (~120-180 MB)<br/>Immutable binaries, glibc, TFLite,<br/>MobileNetV2 flatbuffer model"]
+        P3["Partition 3: DATA<br/>ext4 (rw) (~100 MB or remainder)<br/>Persistent telemetry logs,<br/>benchmark json output"]
+    end
+
+    subgraph VFS_Mounts ["Target Virtual Filesystem Mounts"]
+        M_Boot["/boot (Mounted ro)"]
+        M_Root["/ (Root Directory, Mounted ro)"]
+        M_Tmp["/tmp & /run (tmpfs in RAM)"]
+        M_Data["/data (Mounted rw)"]
+        M_Etc["/etc (OverlayFS Virtual Mount)"]
+    end
+
+    P1 -.->|Mounted Read-Only| M_Boot
+    P2 -.->|Mounted Read-Only| M_Root
+    P3 -.->|Mounted Read-Write| M_Data
+
+    subgraph OverlayMechanics ["OverlayFS Mechanism for Mutable State"]
+        Lower["lowerdir: /etc on Partition 2 (ro)"]
+        Upper["upperdir: /data/overlay/etc_upper (rw)"]
+        Work["workdir: /data/overlay/etc_work"]
+        Lower --> M_Etc
+        Upper --> M_Etc
+        Work --> M_Etc
+    end
+```
+
+### Storage Characteristics
+1. **Partition 1 (BOOT):** FAT32 formatted, contains only signed firmware, boot parameters, and the compressed kernel binary.
+2. **Partition 2 (ROOTFS):** Read-only immutable block device. Any write attempt (`touch /usr/test`) triggers an immediate kernel VFS error (`EROFS: Read-only file system`). Flash memory cell wear is zero.
+3. **Partition 3 (DATA):** Optional writable ext4 partition reserved exclusively for metric logging. An ungraceful power loss on `/data` will never prevent the operating system from booting or the inference engine from functioning.
+
+---
+
+## 4. Machine Learning Inference Pipeline Architecture
+
+The edge classification pipeline is implemented in pure C++17 to avoid the multi-megabyte memory overhead and non-deterministic garbage collection cycles of Python.
+
+```mermaid
+flowchart TD
+    subgraph InputPipeline ["1. Input Ingestion Stage"]
+        InputSource["Input Image Frame (224x224 RGB)"]
+        Preprocessor["Minimal C++ Preprocessor / Normalizer"]
+        InputSource --> Preprocessor
+        Preprocessor --> TensorBuffer["Contiguous Tensor Buffer (1 x 224 x 224 x 3 INT8)"]
+    end
+
+    subgraph InferenceEngine ["2. TFLite & XNNPACK Acceleration Stage"]
+        ModelStorage["/usr/share/models/mobilenet_v2_1.0_224_quant.tflite"]
+        ModelStorage --> FlatBufferModel["FlatBuffer Model Loader (Zero-Copy)"]
+        FlatBufferModel --> Interpreter["TFLite Interpreter (C++ API)"]
+        TensorBuffer --> Interpreter
+        
+        Interpreter --> DelegateMgr["Delegate Manager"]
+        DelegateMgr --> XNNPACK["XNNPACK Execution Delegate"]
+        XNNPACK --> ThreadPool["4-Core Thread Pool (Cortex-A72)"]
+        ThreadPool --> SIMD_NEON["ARM64 NEON Vectorized Kernel Operations"]
+    end
+
+    subgraph OutputPipeline ["3. Classification & Telemetry Stage"]
+        SIMD_NEON --> RawOutput["Output Tensor (1 x 1001 INT8 Probabilities)"]
+        RawOutput --> PostProcessor["Top-K Softmax Dequantizer & ArgMax"]
+        PostProcessor --> ClassResult["Predicted Class ID & Confidence Score"]
+        
+        Timer["High-Res Clock: clock_gettime(CLOCK_MONOTONIC)"]
+        Timer -.-> LatencyCalc["Latency Logger (p50, p95, p99 ms)"]
+        PostProcessor --> LatencyCalc
+        LatencyCalc --> LogOutput["/data/logs/benchmark_results.json"]
+    end
+```
+
+---
+
+## 5. Security & Privilege Separation Architecture
+
+The operating system enforces the principle of least privilege across all user and system boundaries.
+
+```mermaid
+flowchart TD
+    subgraph BootPrivilege ["Privilege Dropping Sequence"]
+        KernelExec["Kernel spawns /sbin/init (UID 0: Root)"]
+        rcSExec["rcS mounts filesystems as root"]
+        InitScript["/etc/init.d/S99edge-inference"]
+        
+        KernelExec --> rcSExec
+        rcSExec --> InitScript
+    end
+
+    subgraph PrivilegeDrop ["Drop Superuser Rights"]
+        InitScript --> DropExec["exec su -s /bin/sh edgeai -c edge-classify"]
+    end
+
+    subgraph UnprivilegedBoundary ["Unprivileged Security Domain: User 'edgeai'"]
+        Process["Process: edge-classify (UID 1001, GID 1001)"]
+        DropExec --> Process
+        
+        PermCheck1["Write attempt to /usr, /bin, /sbin -> REJECTED (EROFS & DAC)"]
+        PermCheck2["Raw network socket creation -> REJECTED (CAP_NET_RAW absent)"]
+        PermCheck3["Kernel module loading -> REJECTED (CAP_SYS_MODULE absent)"]
+        PermAllowed["Write telemetry to /data/logs/ -> ALLOWED (Group 1001 Write)"]
+        
+        Process -.-> PermCheck1
+        Process -.-> PermCheck2
+        Process -.-> PermCheck3
+        Process --> PermAllowed
+    end
+```
+
+### Security Boundary Matrix
+
+| Resource | Root (`UID 0`, Init Phase) | `edgeai` (`UID 1001`, Runtime Phase) | Protection Mechanism |
+| :--- | :--- | :--- | :--- |
+| **RootFS Partition (`/`)** | Read-Only | Read-Only (Forbidden by VFS) | VFS `MS_RDONLY` Mount Flag |
+| **Application Binary (`/usr/bin`)** | Read-Execute (`0755`) | Read-Execute (`0555`) | Standard POSIX DAC |
+| **Model Weight File** | Read-Only (`0644`) | Read-Only (`0444`) | Standard POSIX DAC |
+| **Log Directory (`/data/logs`)** | Read-Write | Read-Write (`0775`) | Group Ownership `edgeai` |
+| **Hardware Serial Console** | Direct Console Access | No Access | Restricted to root on `ttyAMA0` |
+| **Network Interfaces** | Down / No Listener | No Access / No Sockets | No daemons listening |
+| **Kernel Capabilities** | All Capabilities | `0` (Zero Capabilities) | Cleared during `su` privilege drop |
+
+---
+
+## 6. Buildroot Out-of-Tree Integration Design
+
+To guarantee 100% build reproducibility and isolate generated binaries from tracked repository sources:
+
+```
+OS_Project_Track_A/
+├── buildroot/
+│   ├── buildroot-2025.02.10.tar.gz   # Pinned release source
+│   └── buildroot-2025.02.10/          # Extracted Buildroot engine (gitignored)
+├── configs/
+│   └── raspberrypi4_64_edgeml_defconfig  # Pinned Buildroot configuration
+├── rootfs/                            # Root filesystem overlay tree
+│   ├── etc/
+│   │   ├── inittab                    # BusyBox init configuration
+│   │   ├── fstab                      # Mount declarations (ro rootfs, tmpfs)
+│   │   └── init.d/
+│   │       ├── rcS                    # Sysinit orchestrator
+│   │       ├── S01mountfs             # Early VFS mounter
+│   │       ├── S10overlay             # OverlayFS initialization
+│   │       └── S99edge-inference      # Service startup & privilege dropper
+│   └── usr/
+│       └── share/models/              # MobileNetV2 INT8 model and label maps
+├── scripts/
+│   ├── check_host_env.sh              # Host audit tool
+│   ├── build.sh                       # Wrapper: make O=output ...
+│   └── run_benchmarks.sh              # Empirical measurement harness
+└── output/                            # Out-of-tree build directory (gitignored)
+    ├── build/                         # Package build directories
+    ├── host/                          # Cross-toolchain (aarch64-buildroot-linux-gnu)
+    ├── target/                        # Staged root filesystem
+    └── images/                        # Final artifacts: Image, rootfs.ext4, sdcard.img
+```
+
+All build commands are executed out-of-tree using:
+```bash
+make -C buildroot/buildroot-2025.02.10 \
+    O=$(pwd)/output \
+    BR2_DEFCONFIG=$(pwd)/configs/raspberrypi4_64_edgeml_defconfig \
+    defconfig
+```
+This guarantees clean separation, rapid cleaning (`rm -rf output/`), and immutable tracked configuration files.
