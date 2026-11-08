@@ -1,0 +1,639 @@
+Booting Linux on physical CPU 0x0000000000 [0x410fd034]
+Linux version 6.12.27 (gouth@LAPTOP-UB3KGB9A) (aarch64-buildroot-linux-gnu-gcc.br_real (Buildroot -gd891a90-dirty) 13.4.0, GNU ld (GNU Binutils) 2.43.1) #1 SMP Sun Nov  8 06:25:00 UTC 2026
+random: crng init done
+Machine model: linux,dummy-virt
+efi: UEFI not found.
+OF: reserved mem: Reserved memory: No reserved-memory node in the DT
+Zone ranges:
+  DMA      [mem 0x0000000040000000-0x0000000047ffffff]
+  DMA32    empty
+  Normal   empty
+Movable zone start for each node
+Early memory node ranges
+  node   0: [mem 0x0000000040000000-0x0000000047ffffff]
+Initmem setup node 0 [mem 0x0000000040000000-0x0000000047ffffff]
+psci: probing for conduit method from DT.
+psci: PSCIv1.1 detected in firmware.
+psci: Using standard PSCI v0.2 function IDs
+psci: Trusted OS migration not required
+psci: SMC Calling Convention v1.0
+percpu: Embedded 20 pages/cpu s44248 r8192 d29480 u81920
+Detected VIPT I-cache on CPU0
+CPU features: detected: ARM erratum 843419
+CPU features: detected: ARM erratum 845719
+alternatives: applying boot alternatives
+Kernel command line: rootwait root=/dev/vda console=ttyAMA0
+Dentry cache hash table entries: 16384 (order: 5, 131072 bytes, linear)
+Inode-cache hash table entries: 8192 (order: 4, 65536 bytes, linear)
+Built 1 zonelists, mobility grouping on.  Total pages: 32768
+mem auto-init: stack:all(zero), heap alloc:off, heap free:off
+software IO TLB: SWIOTLB bounce buffer size adjusted to 0MB
+software IO TLB: area num 2.
+software IO TLB: SWIOTLB bounce buffer size roundup to 0MB
+software IO TLB: mapped [mem 0x0000000047ec8000-0x0000000047f48000] (0MB)
+SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=2, Nodes=1
+rcu: Hierarchical RCU implementation.
+rcu: 	RCU restricting CPUs from NR_CPUS=512 to nr_cpu_ids=2.
+rcu: RCU calculated value of scheduler-enlistment delay is 25 jiffies.
+rcu: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=2
+NR_IRQS: 64, nr_irqs: 64, preallocated irqs: 0
+Root IRQ handler: gic_handle_irq
+GICv2m: range[mem 0x08020000-0x08020fff], SPI[80:143]
+rcu: srcu_init: Setting srcu_struct sizes based on contention.
+arch_timer: cp15 timer(s) running at 62.50MHz (virt).
+clocksource: arch_sys_counter: mask: 0x1ffffffffffffff max_cycles: 0x1cd42e208c, max_idle_ns: 881590405314 ns
+sched_clock: 57 bits at 63MHz, resolution 16ns, wraps every 4398046511096ns
+Console: colour dummy device 80x25
+Calibrating delay loop (skipped), value calculated using timer frequency.. 125.00 BogoMIPS (lpj=250000)
+pid_max: default: 32768 minimum: 301
+Mount-cache hash table entries: 512 (order: 0, 4096 bytes, linear)
+Mountpoint-cache hash table entries: 512 (order: 0, 4096 bytes, linear)
+cacheinfo: Unable to detect cache hierarchy for CPU 0
+rcu: Hierarchical SRCU implementation.
+rcu: 	Max phase no-delay instances is 1000.
+Timer migration: 1 hierarchy levels; 8 children per group; 1 crossnode level
+EFI services will not be available.
+smp: Bringing up secondary CPUs ...
+Detected VIPT I-cache on CPU1
+CPU1: Booted secondary processor 0x0000000001 [0x410fd034]
+smp: Brought up 1 node, 2 CPUs
+SMP: Total of 2 processors activated.
+CPU: All CPU(s) started at EL1
+CPU features: detected: 32-bit EL0 Support
+CPU features: detected: CRC32 instructions
+alternatives: applying system-wide alternatives
+Memory: 112244K/131072K available (8000K kernel code, 882K rwdata, 1960K rodata, 1152K init, 576K bss, 17056K reserved, 0K cma-reserved)
+devtmpfs: initialized
+clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645041785100000 ns
+futex hash table entries: 512 (order: 3, 32768 bytes, linear)
+29568 pages in range for non-PLT usage
+521088 pages in range for PLT usage
+DMI not present or invalid.
+NET: Registered PF_NETLINK/PF_ROUTE protocol family
+DMA: preallocated 128 KiB GFP_KERNEL pool for atomic allocations
+DMA: preallocated 128 KiB GFP_KERNEL|GFP_DMA pool for atomic allocations
+DMA: preallocated 128 KiB GFP_KERNEL|GFP_DMA32 pool for atomic allocations
+thermal_sys: Registered thermal governor 'step_wise'
+cpuidle: using governor menu
+hw-breakpoint: found 6 breakpoint and 4 watchpoint registers.
+ASID allocator initialised with 65536 entries
+Serial: AMBA PL011 UART driver
+9000000.pl011: ttyAMA0 at MMIO 0x9000000 (irq = 13, base_baud = 0) is a PL011 rev1
+printk: legacy console [ttyAMA0] enabled
+ACPI: Interpreter disabled.
+iommu: Default domain type: Translated
+iommu: DMA domain TLB invalidation policy: strict mode
+SCSI subsystem initialized
+pps_core: LinuxPPS API ver. 1 registered
+pps_core: Software ver. 5.3.6 - Copyright 2005-2007 Rodolfo Giometti <giometti@linux.it>
+PTP clock support registered
+vgaarb: loaded
+clocksource: Switched to clocksource arch_sys_counter
+pnp: PnP ACPI: disabled
+NET: Registered PF_INET protocol family
+IP idents hash table entries: 2048 (order: 2, 16384 bytes, linear)
+tcp_listen_portaddr_hash hash table entries: 256 (order: 0, 4096 bytes, linear)
+Table-perturb hash table entries: 65536 (order: 6, 262144 bytes, linear)
+TCP established hash table entries: 1024 (order: 1, 8192 bytes, linear)
+TCP bind hash table entries: 1024 (order: 3, 32768 bytes, linear)
+TCP: Hash tables configured (established 1024 bind 1024)
+UDP hash table entries: 256 (order: 1, 8192 bytes, linear)
+UDP-Lite hash table entries: 256 (order: 1, 8192 bytes, linear)
+NET: Registered PF_UNIX/PF_LOCAL protocol family
+PCI: CLS 0 bytes, default 64
+workingset: timestamp_bits=46 max_order=15 bucket_order=0
+fuse: init (API version 7.41)
+Block layer SCSI generic (bsg) driver version 0.4 loaded (major 249)
+io scheduler mq-deadline registered
+io scheduler kyber registered
+pci-host-generic 4010000000.pcie: host bridge /pcie@10000000 ranges:
+pci-host-generic 4010000000.pcie:       IO 0x003eff0000..0x003effffff -> 0x0000000000
+pci-host-generic 4010000000.pcie:      MEM 0x0010000000..0x003efeffff -> 0x0010000000
+pci-host-generic 4010000000.pcie:      MEM 0x8000000000..0xffffffffff -> 0x8000000000
+pci-host-generic 4010000000.pcie: Memory resource size exceeds max for 32 bits
+pci-host-generic 4010000000.pcie: ECAM at [mem 0x4010000000-0x401fffffff] for [bus 00-ff]
+pci-host-generic 4010000000.pcie: PCI host bridge to bus 0000:00
+pci_bus 0000:00: root bus resource [bus 00-ff]
+pci_bus 0000:00: root bus resource [io  0x0000-0xffff]
+pci_bus 0000:00: root bus resource [mem 0x10000000-0x3efeffff]
+pci_bus 0000:00: root bus resource [mem 0x8000000000-0xffffffffff]
+pci 0000:00:00.0: [1b36:0008] type 00 class 0x060000 conventional PCI endpoint
+pci_bus 0000:00: resource 4 [io  0x0000-0xffff]
+pci_bus 0000:00: resource 5 [mem 0x10000000-0x3efeffff]
+pci_bus 0000:00: resource 6 [mem 0x8000000000-0xffffffffff]
+virtio_blk virtio0: 1/0/0 default/read/poll queues
+virtio_blk virtio0: [vda] 122880 512-byte logical blocks (62.9 MB/60.0 MiB)
+rtc-pl031 9010000.pl031: registered as rtc0
+rtc-pl031 9010000.pl031: setting system clock to 2026-11-08T11:18:14 UTC (1794136694)
+hw perfevents: enabled with armv8_pmuv3 PMU driver, 7 (0,8000003f) counters available
+NET: Registered PF_INET6 protocol family
+Segment Routing with IPv6
+In-situ OAM (IOAM) with IPv6
+sit: IPv6, IPv4 and MPLS over IPv4 tunneling driver
+NET: Registered PF_PACKET protocol family
+NET: Registered PF_KEY protocol family
+NET: Registered PF_VSOCK protocol family
+registered taskstats version 1
+clk: Disabling unused clocks
+PM: genpd: Disabling unused power domains
+EXT4-fs (vda): orphan cleanup on readonly fs
+EXT4-fs (vda): mounted filesystem 58c0cac4-5a7d-4a1c-acb8-9bfad5e1346f ro with ordered data mode. Quota mode: disabled.
+VFS: Mounted root (ext4 filesystem) readonly on device 254:0.
+devtmpfs: mounted
+Freeing unused kernel memory: 1152K
+Run /sbin/init as init process
+Setting up OverlayFS on /etc: OK
+seedrng: can't remove file 'seed.credit': Read-only file system
+Starting syslogd: OK
+Starting klogd: OK
+Running sysctl: OK
+Starting network: udhcpc: started, v1.37.0
+udhcpc: broadcasting discover
+udhcpc: broadcasting select for 10.0.2.15, server 10.0.2.2
+udhcpc: lease of 10.0.2.15 obtained from 10.0.2.2, lease time 86400
+deleting routers
+adding dns 10.0.2.3
+OK
+Starting crond: OK
+Starting Edge ML service: disabled in /etc/default/edgeml (OK)
+
+Welcome to Buildroot
+buildroot login: root
+# echo ===P7_TEST_01_BOOT_SERVICE===
+===P7_TEST_01_BOOT_SERVICE===
+# /etc/init.d/S99edgeml status
+==========================================
+  Edge ML Service Configuration & Status  
+==========================================
+  Service Enabled: no
+  Binary:          /usr/bin/edge-classify
+  Model:           /usr/share/edgeml/models/mobilenet_v2_1.0_224_quant.tflite
+  Labels:          /usr/share/edgeml/models/imagenet_labels.txt
+  Default Image:   /usr/share/edgeml/images/sample.ppm
+  Thread Count:    2
+  Execution User:  edgeai
+  Log File:        /tmp/edgeml-service.log
+------------------------------------------
+No service execution log found yet.
+==========================================
+# /etc/init.d/S99edgeml start
+Starting Edge ML service: disabled in /etc/default/edgeml (OK)
+# echo ===P7_TEST_02_USABILITY_HELPER===
+===P7_TEST_02_USABILITY_HELPER===
+# /usr/bin/edgeml-run -h
+==================================================================
+  Edge ML Linux OS (Track A) — Inference Assistant
+==================================================================
+Usage: edgeml-run [image_file_or_path] [options]
+
+Options:
+  -l, --list-images    List available sample images
+  -t, --threads <N>    Inference threads (default: 2)
+  -k, --top <K>        Display top K predictions (default: 5)
+  -b, --benchmark [N]  Run benchmark mode with N iterations (default: 10)
+  -m, --model <path>   Custom TFLite model path
+  -h, --help           Show this help message
+
+Quick Examples:
+  edgeml-run sample.ppm
+  edgeml-run sample_bars_224x224.ppm --threads 2
+  edgeml-run sample.ppm --benchmark 10
+  edgeml-run /path/to/custom_image.ppm -k 3
+==================================================================
+# /usr/bin/edgeml-run -l
+Available sample images in /usr/share/edgeml/images:
+  /usr/share/edgeml/images/sample.ppm (175.8K)
+  /usr/share/edgeml/images/sample_ascii_64x64.ppm (47.4K)
+  /usr/share/edgeml/images/sample_bars_224x224.ppm (147.1K)
+  /usr/share/edgeml/images/sample_gradient_300x200.ppm (175.8K)
+# /usr/bin/edgeml-run sample.ppm -k 3
+==================================================================
+  Edge ML Linux OS (Track A) — Production Edge Classifier
+==================================================================
+[INFO] Loading model: /usr/share/edgeml/models/mobilenet_v2_1.0_224_quant.tflite
+[PASS] Model FlatBuffer loaded successfully.
+[PASS] Interpreter configured with 2 thread(s).
+[PASS] Tensor allocation complete.
+[INFO] Input tensor:  [224x224x3], type: UINT8, scale=0.0078125, zero_point=128
+[INFO] Output tensor: [1001 classes], type: UINT8, scale=0.0988925, zero_point=58
+
+--- Image Ingestion & Preprocessing ---
+[INFO] Loading image: /usr/share/edgeml/images/sample.ppm
+[PASS] Image loaded: 300x200 (RGB) in 9.15 ms
+[PASS] Resized to 224x224 and populated input tensor in 15.00 ms
+
+--- Model Inference ---
+[INFO] Executing warm-up invocation...
+
+--- Inference Performance Metrics ---
+[METRIC] Iterations:  1
+[METRIC] Min Latency: 254.98 ms
+[METRIC] Max Latency: 254.98 ms
+[METRIC] Avg Latency: 254.98 ms
+[METRIC] Median Lat.: 254.98 ms
+[METRIC] Throughput:  3.92 inf/sec (FPS)
+
+--- Memory Footprint Metrics ---
+[MEM] Process VmRSS (Active Resident): 13532 KB
+[MEM] Process VmPeak (Peak Virtual):   155556 KB
+[MEM] System MemAvailable:             93780 KB
+
+--- Top-3 Classification Predictions ---
+ Note: Scores represent dequantized logits / activation confidence.
+ +------+----------+------------+------------------------------------------------------------
+ | Rank | Class ID | Confidence | Label
+ +------+----------+------------+------------------------------------------------------------
+ |    1 |      531 |     9.9881 | digital clock
+ |    2 |      855 |     9.0981 | theater curtain, theatre curtain
+ |    3 |      906 |     7.1203 | window shade
+ +------+----------+------------+------------------------------------------------------------
+
+[PASS] Edge classification executed successfully.
+==================================================================
+# echo ===P7_TEST_03_UNPRIVILEGED_EXEC===
+===P7_TEST_03_UNPRIVILEGED_EXEC===
+# su -s /bin/sh edgeai -c "/usr/bin/edgeml-run sample.ppm --threads 2 -k 3"
+==================================================================
+  Edge ML Linux OS (Track A) — Production Edge Classifier
+==================================================================
+[INFO] Loading model: /usr/share/edgeml/models/mobilenet_v2_1.0_224_quant.tflite
+[PASS] Model FlatBuffer loaded successfully.
+[PASS] Interpreter configured with 2 thread(s).
+[PASS] Tensor allocation complete.
+[INFO] Input tensor:  [224x224x3], type: UINT8, scale=0.0078125, zero_point=128
+[INFO] Output tensor: [1001 classes], type: UINT8, scale=0.0988925, zero_point=58
+
+--- Image Ingestion & Preprocessing ---
+[INFO] Loading image: /usr/share/edgeml/images/sample.ppm
+[PASS] Image loaded: 300x200 (RGB) in 4.68 ms
+[PASS] Resized to 224x224 and populated input tensor in 14.57 ms
+
+--- Model Inference ---
+[INFO] Executing warm-up invocation...
+
+--- Inference Performance Metrics ---
+[METRIC] Iterations:  1
+[METRIC] Min Latency: 256.24 ms
+[METRIC] Max Latency: 256.24 ms
+[METRIC] Avg Latency: 256.24 ms
+[METRIC] Median Lat.: 256.24 ms
+[METRIC] Throughput:  3.90 inf/sec (FPS)
+
+--- Memory Footprint Metrics ---
+[MEM] Process VmRSS (Active Resident): 13520 KB
+[MEM] Process VmPeak (Peak Virtual):   155556 KB
+[MEM] System MemAvailable:             93708 KB
+
+--- Top-3 Classification Predictions ---
+ Note: Scores represent dequantized logits / activation confidence.
+ +------+----------+------------+------------------------------------------------------------
+ | Rank | Class ID | Confidence | Label
+ +------+----------+------------+------------------------------------------------------------
+ |    1 |      531 |     9.9881 | digital clock
+ |    2 |      855 |     9.0981 | theater curtain, theatre curtain
+ |    3 |      906 |     7.1203 | window shade
+ +------+----------+------------+------------------------------------------------------------
+
+[PASS] Edge classification executed successfully.
+==================================================================
+# echo ===P7_TEST_04_SERVICE_TRIGGER===
+===P7_TEST_04_SERVICE_TRIGGER===
+# /etc/init.d/S99edgeml run
+>>> Running on-demand Edge ML inference as edgeai...
+==================================================================
+  Edge ML Linux OS (Track A) — Production Edge Classifier
+==================================================================
+[INFO] Loading model: /usr/share/edgeml/models/mobilenet_v2_1.0_224_quant.tflite
+[PASS] Model FlatBuffer loaded successfully.
+[PASS] Interpreter configured with 2 thread(s).
+[PASS] Tensor allocation complete.
+[INFO] Input tensor:  [224x224x3], type: UINT8, scale=0.0078125, zero_point=128
+[INFO] Output tensor: [1001 classes], type: UINT8, scale=0.0988925, zero_point=58
+
+--- Image Ingestion & Preprocessing ---
+[INFO] Loading image: /usr/share/edgeml/images/sample.ppm
+[PASS] Image loaded: 300x200 (RGB) in 5.17 ms
+[PASS] Resized to 224x224 and populated input tensor in 14.81 ms
+
+--- Model Inference ---
+[INFO] Executing warm-up invocation...
+
+--- Inference Performance Metrics ---
+[METRIC] Iterations:  1
+[METRIC] Min Latency: 255.67 ms
+[METRIC] Max Latency: 255.67 ms
+[METRIC] Avg Latency: 255.67 ms
+[METRIC] Median Lat.: 255.67 ms
+[METRIC] Throughput:  3.91 inf/sec (FPS)
+
+--- Memory Footprint Metrics ---
+[MEM] Process VmRSS (Active Resident): 13640 KB
+[MEM] Process VmPeak (Peak Virtual):   155556 KB
+[MEM] System MemAvailable:             93624 KB
+
+--- Top-5 Classification Predictions ---
+ Note: Scores represent dequantized logits / activation confidence.
+ +------+----------+------------+------------------------------------------------------------
+ | Rank | Class ID | Confidence | Label
+ +------+----------+------------+------------------------------------------------------------
+ |    1 |      531 |     9.9881 | digital clock
+ |    2 |      855 |     9.0981 | theater curtain, theatre curtain
+ |    3 |      906 |     7.1203 | window shade
+ |    4 |      783 |     7.0214 | screen, CRT screen
+ |    5 |      645 |     6.9225 | matchstick
+ +------+----------+------------+------------------------------------------------------------
+
+[PASS] Edge classification executed successfully.
+==================================================================
+# echo ===P7_TEST_05_RELIABILITY_ERRORS===
+===P7_TEST_05_RELIABILITY_ERRORS===
+# /usr/bin/edge-classify --model /nonexistent.tflite --image /usr/share/edgeml/i
+mages/sample.ppm 2>&1
+==================================================================
+  Edge ML Linux OS (Track A) — Production Edge Classifier
+==================================================================
+[INFO] Loading model: /nonexistent.tflite
+ERROR: Could not open '/nonexistent.tflite'.
+[ERROR] Failed to load model from: /nonexistent.tflite
+# echo EXIT_MODEL_ERR:$?
+EXIT_MODEL_ERR:2
+# /usr/bin/edge-classify --image /nonexistent.ppm 2>&1
+==================================================================
+  Edge ML Linux OS (Track A) — Production Edge Classifier
+==================================================================
+[INFO] Loading model: /usr/share/edgeml/models/mobilenet_v2_1.0_224_quant.tflite
+[PASS] Model FlatBuffer loaded successfully.
+[PASS] Interpreter configured with 1 thread(s).
+[PASS] Tensor allocation complete.
+[INFO] Input tensor:  [224x224x3], type: UINT8, scale=0.0078125, zero_point=128
+[INFO] Output tensor: [1001 classes], type: UINT8, scale=0.0988925, zero_point=58
+
+--- Image Ingestion & Preprocessing ---
+[INFO] Loading image: /nonexistent.ppm
+[ERROR] Image loading failed: Cannot open file: /nonexistent.ppm
+# echo EXIT_IMG_ERR:$?
+EXIT_IMG_ERR:6
+# /usr/bin/edge-classify --image /usr/share/edgeml/images/sample.ppm --threads 0
+ 2>&1
+[ERROR] Invalid thread count: 0 (must be >= 1)
+# echo EXIT_THREAD_ERR:$?
+EXIT_THREAD_ERR:1
+# echo ===P7_TEST_06_RELIABILITY_REPEATED_10X===
+===P7_TEST_06_RELIABILITY_REPEATED_10X===
+# for i in 1 2 3 4 5 6 7 8 9 10; do
+>     echo -n "Run $i: "
+>     /usr/bin/edge-classify --image /usr/share/edgeml/images/sample.ppm --top 1
+ > /tmp/run_${i}.log 2>&1
+>     grep -E "Avg Latency|VmRSS" /tmp/run_${i}.log | tr "\n" " "
+>     echo ""
+> done
+Run 1: [METRIC] Avg Latency: 487.40 ms [MEM] Process VmRSS (Active Resident): 13628 KB 
+Run 2: [METRIC] Avg Latency: 475.00 ms [MEM] Process VmRSS (Active Resident): 13624 KB 
+Run 3: [METRIC] Avg Latency: 466.74 ms [MEM] Process VmRSS (Active Resident): 13624 KB 
+Run 4: [METRIC] Avg Latency: 462.29 ms [MEM] Process VmRSS (Active Resident): 13600 KB 
+Run 5: [METRIC] Avg Latency: 469.36 ms [MEM] Process VmRSS (Active Resident): 13724 KB 
+Run 6: [METRIC] Avg Latency: 466.34 ms [MEM] Process VmRSS (Active Resident): 13616 KB 
+Run 7: [METRIC] Avg Latency: 467.24 ms [MEM] Process VmRSS (Active Resident): 13700 KB 
+Run 8: [METRIC] Avg Latency: 466.46 ms [MEM] Process VmRSS (Active Resident): 13676 KB 
+Run 9: [METRIC] Avg Latency: 474.22 ms [MEM] Process VmRSS (Active Resident): 13624 KB 
+Run 10: [METRIC] Avg Latency: 464.25 ms [MEM] Process VmRSS (Active Resident): 13692 KB 
+# echo ===P7_TEST_07_PERF_1THREAD===
+===P7_TEST_07_PERF_1THREAD===
+# /usr/bin/edge-classify --image /usr/share/edgeml/images/sample.ppm --threads 1
+ --benchmark 10
+==================================================================
+  Edge ML Linux OS (Track A) — Production Edge Classifier
+==================================================================
+[INFO] Loading model: /usr/share/edgeml/models/mobilenet_v2_1.0_224_quant.tflite
+[PASS] Model FlatBuffer loaded successfully.
+[PASS] Interpreter configured with 1 thread(s).
+[PASS] Tensor allocation complete.
+[INFO] Input tensor:  [224x224x3], type: UINT8, scale=0.0078125, zero_point=128
+[INFO] Output tensor: [1001 classes], type: UINT8, scale=0.0988925, zero_point=58
+
+--- Image Ingestion & Preprocessing ---
+[INFO] Loading image: /usr/share/edgeml/images/sample.ppm
+[PASS] Image loaded: 300x200 (RGB) in 5.22 ms
+[PASS] Resized to 224x224 and populated input tensor in 14.85 ms
+
+--- Model Inference ---
+[INFO] Executing warm-up invocation...
+
+--- Inference Performance Metrics ---
+[METRIC] Iterations:  10
+[METRIC] Min Latency: 461.02 ms
+[METRIC] Max Latency: 474.88 ms
+[METRIC] Avg Latency: 466.25 ms
+[METRIC] Median Lat.: 466.70 ms
+[METRIC] Throughput:  2.14 inf/sec (FPS)
+
+--- Memory Footprint Metrics ---
+[MEM] Process VmRSS (Active Resident): 13624 KB
+[MEM] Process VmPeak (Peak Virtual):   16724 KB
+[MEM] System MemAvailable:             93432 KB
+
+--- Top-5 Classification Predictions ---
+ Note: Scores represent dequantized logits / activation confidence.
+ +------+----------+------------+------------------------------------------------------------
+ | Rank | Class ID | Confidence | Label
+ +------+----------+------------+------------------------------------------------------------
+ |    1 |      531 |     9.9881 | digital clock
+ |    2 |      855 |     9.0981 | theater curtain, theatre curtain
+ |    3 |      906 |     7.1203 | window shade
+ |    4 |      783 |     7.0214 | screen, CRT screen
+ |    5 |      645 |     6.9225 | matchstick
+ +------+----------+------------+------------------------------------------------------------
+
+[PASS] Edge classification executed successfully.
+==================================================================
+# echo ===P7_TEST_08_PERF_2THREADS===
+===P7_TEST_08_PERF_2THREADS===
+# /usr/bin/edge-classify --image /usr/share/edgeml/images/sample.ppm --threads 2
+ --benchmark 10
+==================================================================
+  Edge ML Linux OS (Track A) — Production Edge Classifier
+==================================================================
+[INFO] Loading model: /usr/share/edgeml/models/mobilenet_v2_1.0_224_quant.tflite
+[PASS] Model FlatBuffer loaded successfully.
+[PASS] Interpreter configured with 2 thread(s).
+[PASS] Tensor allocation complete.
+[INFO] Input tensor:  [224x224x3], type: UINT8, scale=0.0078125, zero_point=128
+[INFO] Output tensor: [1001 classes], type: UINT8, scale=0.0988925, zero_point=58
+
+--- Image Ingestion & Preprocessing ---
+[INFO] Loading image: /usr/share/edgeml/images/sample.ppm
+[PASS] Image loaded: 300x200 (RGB) in 5.24 ms
+[PASS] Resized to 224x224 and populated input tensor in 14.76 ms
+
+--- Model Inference ---
+[INFO] Executing warm-up invocation...
+
+--- Inference Performance Metrics ---
+[METRIC] Iterations:  10
+[METRIC] Min Latency: 249.75 ms
+[METRIC] Max Latency: 254.28 ms
+[METRIC] Avg Latency: 251.85 ms
+[METRIC] Median Lat.: 251.50 ms
+[METRIC] Throughput:  3.97 inf/sec (FPS)
+
+--- Memory Footprint Metrics ---
+[MEM] Process VmRSS (Active Resident): 13532 KB
+[MEM] Process VmPeak (Peak Virtual):   155556 KB
+[MEM] System MemAvailable:             94568 KB
+
+--- Top-5 Classification Predictions ---
+ Note: Scores represent dequantized logits / activation confidence.
+ +------+----------+------------+------------------------------------------------------------
+ | Rank | Class ID | Confidence | Label
+ +------+----------+------------+------------------------------------------------------------
+ |    1 |      531 |     9.9881 | digital clock
+ |    2 |      855 |     9.0981 | theater curtain, theatre curtain
+ |    3 |      906 |     7.1203 | window shade
+ |    4 |      783 |     7.0214 | screen, CRT screen
+ |    5 |      645 |     6.9225 | matchstick
+ +------+----------+------------+------------------------------------------------------------
+
+[PASS] Edge classification executed successfully.
+==================================================================
+# echo ===P7_TEST_09_PHASE5_BACKWARD===
+===P7_TEST_09_PHASE5_BACKWARD===
+# ls -lh /usr/lib/libtensorflow-lite.so
+-rwxr-xr-x    1 root     root        3.1M Nov  8 09:36 [1;32m/usr/lib/libtensorflow-lite.so[m
+# /usr/bin/tflite_test /usr/share/edgeml/models/mobilenet_v2_1.0_224_quant.tflit
+e /usr/share/edgeml/models/imagenet_labels.txt 1
+========================================================
+  Edge ML Linux OS (Track A) — TensorFlow Lite Runtime
+========================================================
+[INFO] Initial Process VmRSS:       5180 KB
+[INFO] Initial System MemAvailable: 97576 KB
+[INFO] Loading model: /usr/share/edgeml/models/mobilenet_v2_1.0_224_quant.tflite
+[PASS] Model FlatBuffer loaded successfully.
+[PASS] TFLite Interpreter instantiated.
+[PASS] AllocateTensors() succeeded.
+
+--- Input Tensor Metadata ---
+[INFO] Number of inputs: 1
+[INFO] Input tensor [0] name: input
+[INFO] Input tensor type:     UINT8
+[INFO] Input shape:           [1, 224, 224, 3] (150528 elements)
+[INFO] Input quantization:    scale=0.0078125, zero_point=128
+
+--- Output Tensor Metadata ---
+[INFO] Number of outputs: 1
+[INFO] Output tensor [0] name: output
+[INFO] Output tensor type:      UINT8
+[INFO] Output shape:            [1, 1001] (1001 elements)
+[INFO] Output quantization:     scale=0.0988925, zero_point=58
+
+--- Preparing Input Data ---
+[INFO] Populating input tensor with synthetic test pattern (gradient signal)...
+
+--- Running Inference ---
+[INFO] Warmup invocation...
+[INFO] Executing 1 benchmark iterations...
+
+--- Measured Latency Statistics ---
+[RESULT] Iterations:   1
+[RESULT] Min Latency:  482.04 ms
+[RESULT] Max Latency:  482.04 ms
+[RESULT] Avg Latency:  482.04 ms
+
+--- Memory Footprint Measurement ---
+[RESULT] Process VmRSS (Active RAM):    13452 KB
+[RESULT] Process VmPeak (Virtual Peak):  16516 KB
+[RESULT] System MemAvailable:           94044 KB
+
+--- Output Predictions (Top 5 Classes) ---
+  #1 Class  557 | Score:     8.01 | Label: fire screen, fireguard
+  #2 Class  905 | Score:     7.61 | Label: window screen
+  #3 Class  600 | Score:     6.92 | Label: honeycomb
+  #4 Class  633 | Score:     6.72 | Label: loudspeaker, speaker, speaker unit, loudspeaker system, speaker system
+  #5 Class  829 | Score:     6.53 | Label: strainer
+
+[PASS] TensorFlow Lite C++ Inference Verification Complete.
+========================================================
+# echo ===P7_TEST_10_PHASE6_BACKWARD===
+===P7_TEST_10_PHASE6_BACKWARD===
+# /usr/bin/edge-classify --image /usr/share/edgeml/images/sample_ascii_64x64.ppm
+ --top 3
+==================================================================
+  Edge ML Linux OS (Track A) — Production Edge Classifier
+==================================================================
+[INFO] Loading model: /usr/share/edgeml/models/mobilenet_v2_1.0_224_quant.tflite
+[PASS] Model FlatBuffer loaded successfully.
+[PASS] Interpreter configured with 1 thread(s).
+[PASS] Tensor allocation complete.
+[INFO] Input tensor:  [224x224x3], type: UINT8, scale=0.0078125, zero_point=128
+[INFO] Output tensor: [1001 classes], type: UINT8, scale=0.0988925, zero_point=58
+
+--- Image Ingestion & Preprocessing ---
+[INFO] Loading image: /usr/share/edgeml/images/sample_ascii_64x64.ppm
+[PASS] Image loaded: 64x64 (RGB) in 17.54 ms
+[PASS] Resized to 224x224 and populated input tensor in 15.16 ms
+
+--- Model Inference ---
+[INFO] Executing warm-up invocation...
+
+--- Inference Performance Metrics ---
+[METRIC] Iterations:  1
+[METRIC] Min Latency: 465.65 ms
+[METRIC] Max Latency: 465.65 ms
+[METRIC] Avg Latency: 465.65 ms
+[METRIC] Median Lat.: 465.65 ms
+[METRIC] Throughput:  2.15 inf/sec (FPS)
+
+--- Memory Footprint Metrics ---
+[MEM] Process VmRSS (Active Resident): 13444 KB
+[MEM] Process VmPeak (Peak Virtual):   16548 KB
+[MEM] System MemAvailable:             94268 KB
+
+--- Top-3 Classification Predictions ---
+ Note: Scores represent dequantized logits / activation confidence.
+ +------+----------+------------+------------------------------------------------------------
+ | Rank | Class ID | Confidence | Label
+ +------+----------+------------+------------------------------------------------------------
+ |    1 |      620 |     7.6147 | lampshade, lamp shade
+ |    2 |      847 |     7.4169 | table lamp
+ |    3 |      819 |     6.6258 | spotlight, spot
+ +------+----------+------------+------------------------------------------------------------
+
+[PASS] Edge classification executed successfully.
+==================================================================
+# echo ===P7_TEST_11_PHASE4_SECURITY===
+===P7_TEST_11_PHASE4_SECURITY===
+# mount | grep "on / type"
+/dev/root on / type ext4 (ro,relatime)
+# touch /test_ro_fail 2>&1 || echo "ROOTFS_READONLY_OK"
+touch: /test_ro_fail: Read-only file system
+ROOTFS_READONLY_OK
+# df -h /tmp /run
+Filesystem                Size      Used Available Use% Mounted on
+tmpfs                    56.2M     60.0K     56.2M   0% /tmp
+tmpfs                    56.2M     24.0K     56.2M   0% /run
+# mount | grep "on /etc "
+overlay on /etc type overlay (rw,relatime,lowerdir=/run/overlay/etc_lower,upperdir=/run/overlay/etc_upper,workdir=/run/overlay/etc_work,uuid=on)
+# touch /etc/phase7_overlay_test && ls -l /etc/phase7_overlay_test
+-rw-r--r--    1 root     root             0 Nov  8 11:19 [0;0m/etc/phase7_overlay_test[m
+# id edgeai
+uid=1001(edgeai) gid=1001(edgeai) groups=1001(edgeai)
+# grep edgeai /etc/passwd
+edgeai:x:1001:1001:Edge_ML_User:/home/edgeai:/bin/sh
+# echo ===P7_TEST_12_POWEROFF===
+===P7_TEST_12_POWEROFF===
+# poweroff
+# Stopping Edge ML service: OK (one-shot service)
+Stopping crond: stopped /usr/sbin/crond (pid 116)
+OK
+Stopping network: OK
+Stopping klogd: stopped /sbin/klogd (pid 71)
+OK
+Stopping syslogd: stopped /sbin/syslogd (pid 67)
+OK
+seedrng: can't remove file 'seed.credit': Read-only file system
+Tearing down OverlayFS on /etc: OK
+umount: devtmpfs busy - remounted read-only
+The system is going down NOW!
+Sent SIGTERM to all processes
+Sent SIGKILL to all processes
+Requesting system poweroff
+reboot: Power down
