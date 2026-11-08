@@ -1,6 +1,9 @@
-# Build output directory
+# Build output directories
 output/*
 !output/.gitkeep
+output_qemu/*
+!output_qemu/.gitkeep
+
 
 # Buildroot extracted working tree (extracted from tarball)
 buildroot/buildroot-2025.02.10/
