@@ -1,0 +1,136 @@
+#!/bin/sh
+#
+# /etc/init.d/S99edgeml
+# Boot-time service and management script for Edge ML Linux OS (Track A)
+#
+
+CONF="/etc/default/edgeml"
+
+# Default configuration fallback
+EDGEML_ENABLED="no"
+EDGEML_MODEL="/usr/share/edgeml/models/mobilenet_v2_1.0_224_quant.tflite"
+EDGEML_LABELS="/usr/share/edgeml/models/imagenet_labels.txt"
+EDGEML_IMAGE="/usr/share/edgeml/images/sample.ppm"
+EDGEML_THREADS="2"
+EDGEML_TOP="5"
+EDGEML_USER="edgeai"
+EDGEML_LOG="/tmp/edgeml-service.log"
+
+# Load user configuration if present
+if [ -f "$CONF" ]; then
+    . "$CONF"
+fi
+
+BIN="/usr/bin/edge-classify"
+
+start() {
+    printf "Starting Edge ML service: "
+
+    if [ "$EDGEML_ENABLED" != "yes" ]; then
+        echo "disabled in $CONF (OK)"
+        return 0
+    fi
+
+    if [ ! -x "$BIN" ]; then
+        echo "FAIL (binary $BIN not found or not executable)"
+        return 1
+    fi
+
+    if [ ! -f "$EDGEML_MODEL" ]; then
+        echo "FAIL (model $EDGEML_MODEL missing)"
+        return 1
+    fi
+
+    if [ ! -f "$EDGEML_IMAGE" ]; then
+        echo "SKIPPED (no input image at $EDGEML_IMAGE)"
+        return 0
+    fi
+
+    # Execute in background as unprivileged user to ensure boot is never blocked
+    echo "spawning background inference as $EDGEML_USER..."
+    (
+        echo "=== Edge ML Service Boot Triggered at $(date) ===" > "$EDGEML_LOG"
+        if id "$EDGEML_USER" >/dev/null 2>&1; then
+            su -s /bin/sh "$EDGEML_USER" -c \
+                "$BIN --model '$EDGEML_MODEL' --labels '$EDGEML_LABELS' --image '$EDGEML_IMAGE' --threads '$EDGEML_THREADS' --top '$EDGEML_TOP'" >> "$EDGEML_LOG" 2>&1
+        else
+            "$BIN" --model "$EDGEML_MODEL" --labels "$EDGEML_LABELS" --image "$EDGEML_IMAGE" --threads "$EDGEML_THREADS" --top "$EDGEML_TOP" >> "$EDGEML_LOG" 2>&1
+        fi
+        echo "=== Edge ML Service Completed (exit code: $?) ===" >> "$EDGEML_LOG"
+    ) &
+
+    echo "OK"
+    return 0
+}
+
+stop() {
+    printf "Stopping Edge ML service: "
+    echo "OK (one-shot service)"
+    return 0
+}
+
+restart() {
+    stop
+    start
+}
+
+status() {
+    echo "=========================================="
+    echo "  Edge ML Service Configuration & Status  "
+    echo "=========================================="
+    echo "  Service Enabled: $EDGEML_ENABLED"
+    echo "  Binary:          $BIN"
+    echo "  Model:           $EDGEML_MODEL"
+    echo "  Labels:          $EDGEML_LABELS"
+    echo "  Default Image:   $EDGEML_IMAGE"
+    echo "  Thread Count:    $EDGEML_THREADS"
+    echo "  Execution User:  $EDGEML_USER"
+    echo "  Log File:        $EDGEML_LOG"
+    echo "------------------------------------------"
+    if [ -f "$EDGEML_LOG" ]; then
+        echo "Last Execution Log ($EDGEML_LOG):"
+        cat "$EDGEML_LOG"
+    else
+        echo "No service execution log found yet."
+    fi
+    echo "=========================================="
+}
+
+run() {
+    echo ">>> Running on-demand Edge ML inference as $EDGEML_USER..."
+    if [ ! -x "$BIN" ]; then
+        echo "[ERROR] $BIN not executable."
+        return 1
+    fi
+
+    if id "$EDGEML_USER" >/dev/null 2>&1; then
+        su -s /bin/sh "$EDGEML_USER" -c \
+            "$BIN --model '$EDGEML_MODEL' --labels '$EDGEML_LABELS' --image '$EDGEML_IMAGE' --threads '$EDGEML_THREADS' --top '$EDGEML_TOP'"
+    else
+        "$BIN" --model "$EDGEML_MODEL" --labels "$EDGEML_LABELS" --image "$EDGEML_IMAGE" --threads "$EDGEML_THREADS" --top "$EDGEML_TOP"
+    fi
+}
+
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    restart|reload)
+        restart
+        ;;
+    status)
+        status
+        ;;
+    run)
+        run
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|restart|status|run}"
+        exit 1
+        ;;
+esac
+
+exit $?

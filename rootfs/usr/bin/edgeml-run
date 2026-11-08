@@ -1,0 +1,131 @@
+#!/bin/sh
+#
+# /usr/bin/edgeml-run
+# High-usability wrapper script for Edge ML Linux OS (Track A)
+#
+
+DEFAULT_MODEL="/usr/share/edgeml/models/mobilenet_v2_1.0_224_quant.tflite"
+DEFAULT_LABELS="/usr/share/edgeml/models/imagenet_labels.txt"
+IMAGES_DIR="/usr/share/edgeml/images"
+BIN="/usr/bin/edge-classify"
+
+print_help() {
+    echo "=================================================================="
+    echo "  Edge ML Linux OS (Track A) — Inference Assistant"
+    echo "=================================================================="
+    echo "Usage: edgeml-run [image_file_or_path] [options]"
+    echo ""
+    echo "Options:"
+    echo "  -l, --list-images    List available sample images"
+    echo "  -t, --threads <N>    Inference threads (default: 2)"
+    echo "  -k, --top <K>        Display top K predictions (default: 5)"
+    echo "  -b, --benchmark [N]  Run benchmark mode with N iterations (default: 10)"
+    echo "  -m, --model <path>   Custom TFLite model path"
+    echo "  -h, --help           Show this help message"
+    echo ""
+    echo "Quick Examples:"
+    echo "  edgeml-run sample.ppm"
+    echo "  edgeml-run sample_bars_224x224.ppm --threads 2"
+    echo "  edgeml-run sample.ppm --benchmark 10"
+    echo "  edgeml-run /path/to/custom_image.ppm -k 3"
+    echo "=================================================================="
+}
+
+list_images() {
+    echo "Available sample images in $IMAGES_DIR:"
+    if [ -d "$IMAGES_DIR" ]; then
+        ls -lh "$IMAGES_DIR"/*.ppm 2>/dev/null | awk '{print "  " $9 " (" $5 ")"}'
+    else
+        echo "  [WARN] Image directory $IMAGES_DIR not found."
+    fi
+}
+
+if [ $# -eq 0 ]; then
+    print_help
+    echo ""
+    list_images
+    exit 0
+fi
+
+# Check for special commands
+case "$1" in
+    -h|--help)
+        print_help
+        exit 0
+        ;;
+    -l|--list-images)
+        list_images
+        exit 0
+        ;;
+esac
+
+IMAGE=""
+EXTRA_ARGS=""
+THREADS="2"
+TOP="5"
+BENCHMARK=""
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -h|--help)
+            print_help
+            exit 0
+            ;;
+        -l|--list-images)
+            list_images
+            exit 0
+            ;;
+        -t|--threads)
+            THREADS="$2"
+            shift 2
+            ;;
+        -k|--top)
+            TOP="$2"
+            shift 2
+            ;;
+        -b|--benchmark)
+            if [ -n "$2" ] && echo "$2" | grep -Eq '^[0-9]+$'; then
+                BENCHMARK="--benchmark $2"
+                shift 2
+            else
+                BENCHMARK="--benchmark 10"
+                shift 1
+            fi
+            ;;
+        -m|--model)
+            DEFAULT_MODEL="$2"
+            shift 2
+            ;;
+        *)
+            if [ -z "$IMAGE" ]; then
+                # Check if file exists as-is
+                if [ -f "$1" ]; then
+                    IMAGE="$1"
+                # Check in sample images directory
+                elif [ -f "$IMAGES_DIR/$1" ]; then
+                    IMAGE="$IMAGES_DIR/$1"
+                else
+                    IMAGE="$1"
+                fi
+            else
+                EXTRA_ARGS="$EXTRA_ARGS $1"
+            fi
+            shift 1
+            ;;
+    esac
+done
+
+if [ -z "$IMAGE" ]; then
+    echo "[ERROR] No image specified."
+    print_help
+    exit 1
+fi
+
+exec "$BIN" \
+    --model "$DEFAULT_MODEL" \
+    --labels "$DEFAULT_LABELS" \
+    --image "$IMAGE" \
+    --threads "$THREADS" \
+    --top "$TOP" \
+    $BENCHMARK \
+    $EXTRA_ARGS

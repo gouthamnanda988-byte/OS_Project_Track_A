@@ -1,0 +1,23 @@
+# /etc/default/edgeml
+# Configuration file for Edge ML Service on Edge ML Linux OS (Track A)
+
+# Enable automatic inference execution on system boot:
+# Set to "yes" to run inference during boot, or "no" to keep disabled (default).
+EDGEML_ENABLED="no"
+
+# Model and labels configuration
+EDGEML_MODEL="/usr/share/edgeml/models/mobilenet_v2_1.0_224_quant.tflite"
+EDGEML_LABELS="/usr/share/edgeml/models/imagenet_labels.txt"
+
+# Default image for boot-time or service-triggered inference
+EDGEML_IMAGE="/usr/share/edgeml/images/sample.ppm"
+
+# Inference parameters
+EDGEML_THREADS="2"
+EDGEML_TOP="5"
+
+# Unprivileged execution user (least-privilege security principle)
+EDGEML_USER="edgeai"
+
+# Log output destination for boot-time service
+EDGEML_LOG="/tmp/edgeml-service.log"

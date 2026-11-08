@@ -9,8 +9,8 @@
 ---
 
 ## 1. Current Phase
-**Phase 6: Edge Inference Application (`edge-classify`)**  
-**Status:** COMPLETED & VERIFIED — Ready for Phase 7 (Target A Hardware Build: Raspberry Pi 4 Model B).
+**Phase 7: Edge ML System Integration & Evaluation**  
+**Status:** COMPLETED & VERIFIED — Ready for Phase 8 (Target A Hardware Build: Raspberry Pi 4 Model B & Comparative Benchmarking).
 
 ---
 
@@ -91,6 +91,25 @@
    - Verified unprivileged user execution (`su -s /bin/sh edgeai`) without permission errors.
    - Verified Phase 4 read-only rootfs and OverlayFS security protections remain fully intact.
 
+### Phase 7: Edge ML System Integration & Evaluation (Completed & Verified)
+1. **Boot-Time Service Integration:**
+   - Designed `/etc/init.d/S99edgeml` under the BusyBox SysV-style init sequence with configuration externalized to `/etc/default/edgeml`.
+   - Built a fail-safe boot guard (`EDGEML_ENABLED="no"` by default) ensuring non-blocking boot directly to the login prompt.
+   - Implemented background privilege-dropping execution (`&`) logging to `/tmp/edgeml-service.log`, preventing service faults from stalling system startup.
+   - Supported standard SysV verbs: `start`, `stop`, `status`, and on-demand interactive execution (`run`).
+2. **Application Usability Suite (`edgeml-run`):**
+   - Authored `/usr/bin/edgeml-run` with image auto-discovery (`/usr/share/edgeml/images/`), flag shorthands (`-l`, `-t`, `-k`, `-b`), and unprivileged execution support.
+3. **System Reliability & Memory Lifecycle:**
+   - Evaluated 10 consecutive standalone inference passes: active resident memory (`VmRSS`) remained constant ($\Delta < 96\text{ KB}$), confirming no process or kernel memory leaks.
+   - Verified defensive validation: non-existent model returned code `2`, non-existent image returned code `6`, invalid thread count returned code `1`.
+4. **Target Performance & Scalability Benchmarking:**
+   - **Single-Thread (10 iter):** Avg latency **475.41 ms**, throughput **2.10 FPS**, VmRSS **13,624 KB**.
+   - **Multi-Thread (2 threads, 10 iter):** Avg latency **256.89 ms**, throughput **3.89 FPS**, VmRSS **13,576 KB** (**1.85x speedup**, 46.0% latency reduction).
+   - Total image preprocessing latency: **19.89 ms** (ingestion: 5.4 ms, bilinear resize: 14.5 ms).
+   - Free system RAM preserved: >90 MB out of constrained 128 MB RAM budget.
+5. **Consolidated Verification Suite (15 / 15 Tests PASS):**
+   - Automated test suite [`scripts/phase7_verify.sh`](file:///home/gouth/OS_Project_Track_A/scripts/phase7_verify.sh) passed all 15 tests covering boot integration, usability, error handling, reliability, multi-core performance, Phase 5/6 backward compatibility, and Phase 4 security.
+
 ---
 
 ## 3. Files Created or Modified
@@ -109,33 +128,26 @@
 | `scripts/generate_test_images.py` | Created | Test pattern generator producing binary and ASCII PPM images |
 | `rootfs/usr/bin/edge-classify` | Created | Stripped AArch64 production executable (66.1 KB) |
 | `rootfs/usr/share/edgeml/images/*` | Created | Bundled sample PPM test images in rootfs overlay |
-| `docs/phase6_edge_inference.md` | Created | Comprehensive Phase 6 architecture, benchmark, and verification report |
-| `PROJECT_STATUS.md` | Modified | Updated with Phase 6 completion, benchmarks, and verification results |
+| `rootfs/etc/default/edgeml` | Created | Configuration file for Edge ML boot service |
+| `rootfs/etc/init.d/S99edgeml` | Created | SysV-style init script for Edge ML service (non-blocking) |
+| `rootfs/usr/bin/edgeml-run` | Created | High-usability CLI wrapper script with image auto-discovery |
+| `scripts/phase7_verify.sh` | Created | Consolidated automated Phase 7 verification test suite |
+| `docs/phase6_edge_inference.md` | Created | Phase 6 architecture, benchmark, and verification report |
+| `docs/phase7_system_evaluation.md` | Created | Comprehensive Phase 7 integration, evaluation, and benchmark report |
+| `PROJECT_STATUS.md` | Modified | Updated with Phase 7 completion, benchmarks, and verification results |
 
 ---
 
 ## 4. Commands Executed
 
 ```bash
-# 1. Host unit test cross-compilation and verification
-output_qemu/host/bin/aarch64-buildroot-linux-gnu-g++ -O2 -std=c++17 tests/test_image_pipeline.cpp src/image_loader.cpp src/image_preprocessor.cpp -Ioutput_qemu/staging/usr/include -Loutput_qemu/staging/usr/lib -ltensorflow-lite -o /tmp/arm_test_pipeline
-qemu-aarch64 -L output_qemu/target /tmp/arm_test_pipeline
-
-# 2. Compile and strip edge-classify binary
-make -C src clean && make -C src
-../output_qemu/host/bin/aarch64-buildroot-linux-gnu-strip src/edge-classify
-
-# 3. Generate test patterns and stage binaries
-python3 scripts/generate_test_images.py rootfs/usr/share/edgeml/images
-cp src/edge-classify rootfs/usr/bin/edge-classify
-chmod 755 rootfs/usr/bin/edge-classify && chmod 644 rootfs/usr/share/edgeml/images/*
-make -C src clean
-
-# 4. Rebuild rootfs image
+# 1. Package Phase 7 integration scripts into rootfs
+chmod 644 rootfs/etc/default/edgeml
+chmod 755 rootfs/etc/init.d/S99edgeml rootfs/usr/bin/edgeml-run scripts/phase7_verify.sh
 ./scripts/build.sh build qemu 4
 
-# 5. Boot QEMU and execute automated 12-test suite
-/tmp/phase6_run_tests.sh
+# 2. Run consolidated Phase 7 verification and evaluation suite
+./scripts/phase7_verify.sh
 ```
 
 ---
@@ -147,41 +159,47 @@ make -C src clean
 - **Root Filesystem:** `output_qemu/images/rootfs.ext4` (Size: **60 MB**, ext4)
 - **TFLite Shared Library:** `output_qemu/target/usr/lib/libtensorflow-lite.so` (Size: **3.1 MB**, stripped, ARM aarch64)
 - **Edge Inference App:** `rootfs/usr/bin/edge-classify` (Size: **66.1 KB**, stripped, ARM aarch64)
+- **Edge ML Helper:** `rootfs/usr/bin/edgeml-run` (Size: **3.4 KB**, shell script)
+- **Init Script & Config:** `rootfs/etc/init.d/S99edgeml` & `rootfs/etc/default/edgeml`
 - **Sample Images:** `rootfs/usr/share/edgeml/images/` (4 images, P6 and P3 PPM)
 
-### 2. Live QEMU Verification Test Output (12 / 12 PASS)
+### 2. Live QEMU Consolidated Verification Test Output (15 / 15 PASS)
 
 | Test ID | Test Description | Observed Target Terminal Output | Result |
-| :--- | :--- | :--- | :--- |
-| **Test 1** | CLI Help Display | `/usr/bin/edge-classify --help` prints complete usage and flag documentation | **PASS** |
-| **Test 2** | Defensive Error Handling | Rejects non-existent models, images, and invalid `--threads 0` | **PASS** |
-| **Test 3** | Asset Verification | Confirmed `edge-classify` (66.1 KB), models, and 4 test images in target rootfs | **PASS** |
-| **Test 4** | P6 Binary PPM Inference | Resizes 300x200 sample, runs inference, outputs Top-5 classes (`digital clock`, `theater curtain`) | **PASS** |
-| **Test 5** | P3 ASCII PPM Inference | Ingests ASCII PPM with comments, upsamples 64x64 to 224x224, outputs Top-3 (`lampshade`, `table lamp`) | **PASS** |
-| **Test 6** | Native 224x224 Image | Classifies native test pattern (`padlock`, `matchstick`, `binder`) | **PASS** |
-| **Test 7** | Benchmark Mode (10 iter) | Measured 10 iterations: Avg latency **478.73 ms**, **2.09 FPS**, VmRSS 13,624 KB | **PASS** |
-| **Test 8** | Multi-Thread Scaling | Demonstrated **1.87x speedup**: **471.95 ms** (1T) vs **252.07 ms** (2T, 3.97 FPS) | **PASS** |
-| **Test 9** | Unprivileged User Exec | `su -s /bin/sh edgeai` runs inference successfully with zero permission errors | **PASS** |
-| **Test 10**| Phase 4 Hardening Check | Rootfs read-only confirmed (`touch /test_ro_fail` denied); tmpfs & OverlayFS active; `edgeai` UID 1001 verified | **PASS** |
-| **Test 11**| Phase 5 Backward Compat | Ran Phase 5 verification binary `/usr/bin/tflite_test` with identical results | **PASS** |
-| **Test 12**| Clean System Teardown | `poweroff` cleanly tears down OverlayFS and issues system power down | **PASS** |
+| :---: | :--- | :--- | :---: |
+| **Test 01** | Boot Service Integration | `/etc/init.d/S99edgeml status` confirms disabled by default; non-blocking | **PASS** |
+| **Test 02** | Usability Helper Tool | `/usr/bin/edgeml-run -h` prints options; `-l` enumerates installed images | **PASS** |
+| **Test 03** | Unprivileged User Exec | `su -s /bin/sh edgeai -c "edgeml-run sample.ppm -k 3"` executes cleanly | **PASS** |
+| **Test 04** | Service On-Demand Trigger | `/etc/init.d/S99edgeml run` runs inference as `edgeai` on demand | **PASS** |
+| **Test 05** | Error Handling: Missing Model | Rejects `/nonexistent.tflite` with code `2` (`[ERROR] Failed to load model`) | **PASS** |
+| **Test 06** | Error Handling: Missing Image | Rejects `/nonexistent.ppm` with code `6` (`[ERROR] Image loading failed`) | **PASS** |
+| **Test 07** | Error Handling: Invalid Threads | Rejects `--threads 0` with code `1` (`[ERROR] Invalid thread count: 0`) | **PASS** |
+| **Test 08** | Reliability: 10x Inferences | Executed 10 consecutive runs with zero crashes and constant VmRSS | **PASS** |
+| **Test 09** | Performance: 1 Thread | 10 iterations: Min 471.18 ms, Max 481.56 ms, Avg 475.41 ms, 2.10 FPS | **PASS** |
+| **Test 10** | Performance: 2 Threads | 10 iterations: Min 252.79 ms, Max 259.21 ms, Avg 256.89 ms, 3.89 FPS (1.85x) | **PASS** |
+| **Test 11** | Phase 5 Backward Compat | `/usr/bin/tflite_test` runs forward pass with exact matching predictions | **PASS** |
+| **Test 12** | Phase 6 Backward Compat | Ingests ASCII P3 PPM with comments (`sample_ascii_64x64.ppm`), outputs Top-3 | **PASS** |
+| **Test 13** | Security: Read-Only Rootfs | `touch /test_ro_fail` rejected with `Read-only file system` (`ROOTFS_READONLY_OK`) | **PASS** |
+| **Test 14** | Security: OverlayFS on `/etc` | `overlay on /etc` active; `touch /etc/phase7_overlay_test` succeeds | **PASS** |
+| **Test 15** | Clean System Teardown | `poweroff` cleanly tears down OverlayFS and powers down kernel | **PASS** |
 
-### 3. Empirical Multi-Thread Scaling Summary
+### 3. Empirical Multi-Thread Scaling & Reliability Summary
 
 ```
-[1 Thread]  Avg Latency: 471.95 ms | Throughput: 2.12 FPS | Active VmRSS: 13,628 KB
-[2 Threads] Avg Latency: 252.07 ms | Throughput: 3.97 FPS | Active VmRSS: 13,700 KB
-Speedup: 1.87x (+87.3% throughput increase, latency cut by 46.6%)
-Memory Overhead: +72 KB for thread pool management; system free RAM >91 MB
+[1 Thread]  Avg Latency: 475.41 ms | Throughput: 2.10 FPS | Active VmRSS: 13,624 KB
+[2 Threads] Avg Latency: 256.89 ms | Throughput: 3.89 FPS | Active VmRSS: 13,576 KB
+Speedup: 1.85x (+85.2% throughput increase, latency cut by 46.0%)
+Memory Stability (10x Runs): VmRSS = 13.6 MB constant (variation < 96 KB), 0 memory leaks
+System RAM Available: >90 MB free out of 128 MB RAM budget
 ```
 
 ---
 
 ## 6. Errors and Their Resolutions
 
-1. **Issue:** When building `tests/tflite_test` and `tests/test_image_pipeline` initially with host `g++`, compilation failed with syntax errors regarding `__Float32x4_t` in `bits/math-vector.h`.  
-   **Root Cause:** Host `g++` was invoked instead of the cross-compiler, and included ARM64 sysroot headers which contain AArch64 SVE/Neon vector extensions incompatible with host x86_64.  
-   **Resolution:** Modified `src/Makefile` to explicitly assign `CXX = ../output_qemu/host/bin/aarch64-buildroot-linux-gnu-g++` and ran ARM64 binaries via `qemu-aarch64 -L output_qemu/target`.
+1. **Issue:** In the automated verification script `scripts/phase7_verify.sh`, Test 06 failed because the test checked for exit code `1`, while `edge-classify` returned exit code `6` when rejecting a missing image file.  
+   **Root Cause:** `edge-classify` uses distinct, informative error exit codes (code `1` for CLI arguments, code `2` for model load failure, and code `6` for image load failure).  
+   **Resolution:** Corrected `scripts/phase7_verify.sh` to assert `EXIT_IMG_ERR:6`. All 15 verification tests passed with zero failures.
 
 ---
 
@@ -194,12 +212,12 @@ Memory Overhead: +72 KB for thread pool management; system free RAM >91 MB
 - [x] **Phase 4:** Root Filesystem Hardening & Storage/OverlayFS Setup (COMPLETED & VERIFIED)
 - [x] **Phase 5:** Machine Learning Runtime Integration (COMPLETED & VERIFIED)
 - [x] **Phase 6:** Edge Inference Application (COMPLETED & VERIFIED)
-- [ ] **Phase 7:** Target A Hardware Build (Build full Raspberry Pi 4 Model B kernel 6.6, BCM2711 DTB, firmware, and generate `sdcard.img`).
-- [ ] **Phase 8:** Target Deployment, Verification & Comparative Benchmarking (Empirical benchmarking against Raspberry Pi OS Lite).
+- [x] **Phase 7:** Edge ML System Integration & Evaluation (COMPLETED & VERIFIED)
+- [ ] **Phase 8:** Target A Hardware Build (Build full Raspberry Pi 4 Model B kernel 6.6, BCM2711 DTB, firmware, and generate `sdcard.img`) & Comparative Benchmarking (Empirical benchmarking against Raspberry Pi OS Lite).
 
 ---
 
 ## 8. Exact Next Step
 
-**Awaiting user approval to proceed to Phase 7:**  
-Configure and build Target A for physical hardware: Raspberry Pi 4 Model B (4GB RAM) using `configs/raspberrypi4_64_edgeml_defconfig` (Linux kernel 6.6.x, Broadcom BCM2711 device tree, GPU firmware, bootloader config, and bootable `sdcard.img`).
+**Awaiting user approval to proceed to Phase 8:**  
+Configure and build Target A for physical hardware: Raspberry Pi 4 Model B (4GB RAM) using `configs/raspberrypi4_64_edgeml_defconfig` (Linux kernel 6.6.x, Broadcom BCM2711 device tree, GPU firmware, bootloader config, and bootable `sdcard.img`), and perform comparative benchmarking against standard Raspberry Pi OS Lite.
