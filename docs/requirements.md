@@ -57,6 +57,13 @@ Standard stock distributions (such as Raspberry Pi OS Lite 64-bit or Ubuntu Serv
 | **Power Budget** | 5V DC via USB-C (Official 15.3W PSU, max 3.0A) | Must maintain stability under continuous 4-core SIMD inference load without undervoltage. |
 | **Thermal Budget** | Passive heatsink or 5V fan | Must sustain continuous 4-thread inference without exceeding the 80°C thermal throttling ceiling. |
 
+### 3.1 Selection Justification for Raspberry Pi 4 Model B
+The Raspberry Pi 4 Model B (4GB RAM) was selected as the reference hardware target for Track A based on the following edge-computing criteria:
+1. **Compute Throughput & 64-bit Architecture:** The Broadcom BCM2711 with quad-core ARM Cortex-A72 cores (@ 1.5–1.8 GHz) delivers the floating-point and integer throughput required for real-time edge vision workloads without requiring high-power discrete accelerators or costly dedicated NPUs.
+2. **ARM NEON SIMD Vector Engine:** The Cortex-A72 architecture features Advanced SIMD (NEON) vector pipelines natively supporting 8-bit integer dot products and matrix operations, matching the computational model of quantized neural networks (GEMM/ruy).
+3. **Memory Capacity & Bandwidth:** 4 GB LPDDR4-3200 memory provides ample bandwidth for sustained inference streams while easily fitting the operating system, TFLite runtime, and tensor working sets.
+4. **Edge Ecosystem Maturity:** Ubiquitous industrial availability, upstream Linux kernel support (6.6 LTS branch), standard Device Tree bindings, and comprehensive hardware documentation make it the ideal benchmark platform for embedded edge computing.
+
 ---
 
 ## 4. Performance, Latency, Power, and Footprint Requirements
@@ -66,22 +73,22 @@ Standard stock distributions (such as Raspberry Pi OS Lite 64-bit or Ubuntu Serv
 
 ### 4.1 Target Performance & Latency Metrics
 
-| Metric | Proposed Target (Track A Custom OS) | Typical Baseline (RPi OS Lite 64-bit) | Evaluation Protocol |
+| Metric | Proposed Target (Track A Custom OS) | Typical Baseline (RPi OS Lite 64-bit) | Requirement Threshold / Evaluation Protocol |
 | :--- | :--- | :--- | :--- |
-| **Cold Boot Time (Power-on to Init)** | **< 3.0 seconds** | ~15.0 - 22.0 seconds | Hardware serial timestamp from reset to PID 1 |
+| **Cold Boot Time (Power-on to Init)** | **< 3.0 seconds** | ~15.0 - 22.0 seconds | **Must be < 15.0s** (Hardware serial timestamp from reset to PID 1) |
 | **Cold Boot to 1st Inference Ready** | **< 4.5 seconds** | ~35.0 - 50.0 seconds | Wall-clock time to classification completion |
-| **Single-Thread Inference Latency ($p_{50}$)** | **~45.0 - 55.0 ms** | ~55.0 - 75.0 ms (Python overhead) | MobileNetV2 INT8 (224x224), 100 runs |
-| **Multi-Thread (4T) Inference Latency ($p_{50}$)** | **~15.0 - 22.0 ms** | ~22.0 - 35.0 ms | MobileNetV2 INT8 (224x224), 100 runs |
-| **Throughput (4-Thread Steady-State)** | **> 45 FPS** | ~28 - 38 FPS | Continuous frame ingestion pipeline |
+| **Single-Thread Inference Latency ($p_{50}$)** | **~45.0 - 55.0 ms** (hardware) / **< 480 ms** (QEMU) | ~55.0 - 75.0 ms (Python overhead) | **Must be < 500 ms/image** (MobileNetV2 INT8 224x224, 100 runs) |
+| **Multi-Thread (4T) Inference Latency ($p_{50}$)** | **~15.0 - 22.0 ms** (hardware) / **< 260 ms** (2T QEMU) | ~22.0 - 35.0 ms | MobileNetV2 INT8 (224x224), 100 runs |
+| **Throughput (4-Thread Steady-State)** | **> 45 FPS** (hardware) / **> 3.8 FPS** (2T QEMU) | ~28 - 38 FPS | Continuous frame ingestion pipeline |
 | **Inference Latency Jitter (p99 - p50)** | **< 3.5 ms** | > 15.0 ms | Strict determinism under idle background |
 
 ### 4.2 Target Resource & Storage Footprint
 
-| Parameter | Proposed Target (Custom OS) | Typical Baseline (RPi OS Lite) | Justification |
+| Parameter | Proposed Target (Custom OS) | Typical Baseline (RPi OS Lite) | Requirement Threshold / Justification |
 | :--- | :--- | :--- | :--- |
-| **Total SD Card Image (`sdcard.img`)** | **< 200 MB** | ~1.8 GB - 2.5 GB | Stripped of desktop, apt, python, and doc trees. |
+| **Total SD Card Image (`sdcard.img`)** | **< 200 MB** | ~1.8 GB - 2.5 GB | **Must be >= 40% smaller than stock OS** (Target achieves >88% reduction) |
 | **RootFS Partition Footprint (Compressed)** | **< 120 MB** | ~1.5 GB | Minimal glibc userspace + TFLite runtime + model. |
-| **System Idle RAM Usage** | **< 35 MB** | ~160 MB - 220 MB | No systemd, no dbus, no network daemons. |
+| **System Idle RAM Usage** | **< 35 MB** | ~160 MB - 220 MB | **Must be < 250 MB** (No systemd, no dbus, no network daemons) |
 | **Active ML Inference Peak RSS** | **< 28 MB** | ~120 MB - 250 MB | Native C++ executable vs Python runtime bloat. |
 
 ### 4.3 Target Power & Thermal Characteristics
@@ -161,6 +168,11 @@ To reduce kernel image size, conserve boot time, and minimize attack surface, th
   - Continuous batch inference mode for sustained thermal and throughput stress testing.
   - Direct raw bitmap / preprocessed tensor ingestion without external bulky image libraries.
   - High-precision telemetry logging using `clock_gettime(CLOCK_MONOTONIC)`.
+
+### 7.4 Automatic Application Startup & Inference Service
+- **Boot-Time Service Integration:** The operating system must provide an automated startup mechanism (e.g. SysV init script `/etc/init.d/S99edgeml`) capable of launching the inference pipeline upon boot without requiring manual user login.
+- **Fail-Safe & Non-Blocking Design:** The startup service must be configurable (enabled/disabled via `/etc/default/edgeml`), verify valid input assets before execution, and run asynchronously or drop privileges cleanly to ensure boot is never stalled.
+- **Successful Classification Requirement:** The inference pipeline must successfully ingest input image tensors, perform forward inference, and output Top-K predicted ImageNet classification categories with validated confidence scores.
 
 ---
 

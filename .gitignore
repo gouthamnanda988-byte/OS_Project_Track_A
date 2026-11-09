@@ -4,6 +4,9 @@ output/*
 output_qemu/*
 !output_qemu/.gitkeep
 
+# Stock Linux baseline VM disk images
+stock_linux/
+*.qcow2
 
 # Buildroot extracted working tree (extracted from tarball)
 buildroot/buildroot-2025.02.10/

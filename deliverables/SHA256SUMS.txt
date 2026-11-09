@@ -1,0 +1,50 @@
+# Cryptographic SHA-256 Checksum Manifest
+# Edge ML Linux OS (Track A) — Buildroot 2025.02.10 LTS / Linux Kernel 6.12.27
+# Generated: November 2026
+
+# Source Distributions & Kernel
+f3de928ed368ef3dcadb97d4f4c1a9f49424a367759dba1d97c4c2bc5a22eab1  buildroot/buildroot-2025.02.10.tar.gz
+8f4655a4cc7f93d72f515bbca54756de26ddaf5949790da6a17f766e3c33dc79  downloads/linux/linux-6.12.27.tar.xz
+
+# Target Configurations & User Tables
+5584698dc09ebfd53ec93c4a5447f993edd7329403bc4d5c8160f64b73d7a5bb  configs/qemu_aarch64_virt_edgeml_defconfig
+e47d4772c7662c81490257d77106b705abc39cc422c0cfcbabd936da65ad4cb2  configs/raspberrypi4_64_edgeml_defconfig
+7324cb5c33f71d286664f4a900e9af0ca6fd94887df13c6e229f680177f7be00  configs/users_table.txt
+
+# Automation & Verification Scripts
+9368f86ba2b399ff4616f0fd7ea06537034d55ca7634036481634280c22fe917  scripts/build.sh
+50cbf3b965dcdbdacf9cb46d1241fdbf6afccab12fa3f5d0f05d5ae6d3bd3b1f  scripts/check_host_env.sh
+4fc276da1d2fea2d59a467dd98a50482702090a1661836c6433f89d9ca58e457  scripts/phase7_verify.sh
+
+# Edge ML Application Source Code
+9305115f8312c7469531d25d92837f3c7e7788ad70da79d53df6d87bc576ac23  src/edge_classify.cpp
+0d8281086fbd195099da8c1422a248c9160fa3d4bfaeb6259e229506e515a2aa  src/image_loader.cpp
+d84310953100e5afa1d3dc628a8391b753d7ce77253edcbb96f950bfb28dbc04  src/image_loader.h
+764613b6a091e05992eee9a40f228f052ea1d548bb63e24f2ff6b985c5a52694  src/image_preprocessor.cpp
+37858b73b66ac8300cc98e2fbed5fe188fed2ce77614021ba92106da796e2d9b  src/image_preprocessor.h
+8c5efe547925cbd551a756eb858a98aa5d78be26ed88f4bd4bc2c247d9848b81  src/Makefile
+
+# Machine Learning Models & Imagery Assets
+f08d447cde49b4e0446428aa921aff0a14ea589fa9c5817b31f83128e9a43c1d  ml_model/mobilenet_v2_1.0_224_quant.tflite
+b8aaeb5630c62626a7d124a05c0e14230a7ffdd2136a31d0190a4fb71c1d82f1  ml_model/imagenet_labels.txt
+3addb275028a96ec053f55adf8a8127bcbcbefdaa2dd33817ea13fb3e21dfea0  ml_model/mobilenet_v2_1.0_224_quant_info.txt
+
+# Target RootFS Overlay Configuration & Init Scripts
+0bf2879283dac99f8fd7643619d153bbe42977ab832b8015ee3ec137ec0166ce  rootfs/etc/fstab
+6a8f79f36cc00affb6b804b784193558c09c484fd97887a4c8f64027d9e6740d  rootfs/etc/inittab
+ba35ff990c77135065dcfc42e525bb32a9351871d479a185e619e1fc8d3298ca  rootfs/etc/default/edgeml
+7430b16d001c766877f8c4749e280bcd2f47a0c6a8618a76d0d340a7989b581b  rootfs/etc/init.d/S00overlay
+225a2a8cfc88e23cc209c94c61b9ad7c3757eb49e262f73c939e6395ee6c06a6  rootfs/etc/init.d/S99edgeml
+
+# Release Deliverables (Configs & Manifests)
+5016a4221cc8ab44eee634e3b5df9b253f147f98f9436c23e8680926ea8037af  deliverables/config/buildroot.config
+fe9a457743f28a7da1c1e8fd02dcae6322f28e5cea28e49c4f467fd782eafae7  deliverables/config/kernel.config
+5bd597db59ccac2ea2e720efa435dfcdfc7e0dc126a3c5f781016fad5e914062  deliverables/package-manifest.json
+
+# Release Kernel & Filesystem Images
+493da3b0d1a85549947f334f8419c2517872dc7dd4394e2ad015cedc768717e0  deliverables/images/Image
+d9d92622c2797303054d0e45d306607317aeb1951fdf3f082b5f39639810138e  deliverables/images/rootfs.ext2
+493da3b0d1a85549947f334f8419c2517872dc7dd4394e2ad015cedc768717e0  output_qemu/images/Image
+
+# Rebuilt Application Binary (Stripped)
+e04c77b7f240167d0de34259fa58626a4013c10b60876364a2a7fab6c971f03e  output_qemu/target/usr/bin/edge-classify
