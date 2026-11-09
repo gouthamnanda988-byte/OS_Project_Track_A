@@ -1,98 +1,81 @@
 # Project Status: Edge ML Linux OS (Track A)
 
+**Project Title:** Application-Specific Linux Distribution for Edge ML Inference (Track A)  
 **Target Hardware:** Raspberry Pi 4 Model B (4GB RAM)  
-**Emulation Target:** QEMU ARM64 Virt Machine (`aarch64`)  
+**Emulation Platform:** QEMU ARM64 Virt Machine (`aarch64`, Cortex-A53, 2 vCPUs, 128 MB RAM)  
 **Build System:** Buildroot 2025.02.10 LTS  
 **Primary Workload:** CPU-based MobileNetV2 INT8 Quantized Inference  
 **Last Updated:** November 2026  
 
 ---
 
-## 1. Current Phase
-**Phase Complete:** Git Reproducibility, Build Manifests, and Baseline Evaluation (Phase 1–3 & Verification)  
-**Next Phase:** Phase 8 (Target A Hardware Build: Raspberry Pi 4 Model B & Comparative Benchmarking).
+## 1. Project Phase Matrix
+
+| Phase | Phase Title | Status | Primary Output / Verification Evidence |
+| :--- | :--- | :--- | :--- |
+| **Phase 1** | Requirements Analysis & Specification | **Completed** | `docs/requirements.md` (Hardware, latency, memory, security targets) |
+| **Phase 2** | System Architecture & Build System Selection | **Completed** | `docs/architecture.md` (Mermaid architectural models, Buildroot selection) |
+| **Phase 3** | Development Environment Setup & Stock Linux Baseline | **Completed** | Host environment verified (`scripts/check_host_env.sh`), Debian 13 VM baseline |
+| **Phase 4** | Buildroot Configuration | **Completed** | `configs/qemu_aarch64_virt_edgeml_defconfig` & `raspberrypi4_64_edgeml_defconfig` |
+| **Phase 5** | Custom Linux Image Build | **Completed** | Cross-toolchain GCC 13.4.0, glibc 2.41, initial image build |
+| **Phase 6** | Linux Kernel & Driver Configuration | **Completed** | Linux 6.12.27 ARM64 custom config (virtio, ext4, OverlayFS built-in) |
+| **Phase 7** | Machine Learning Framework Integration | **Completed** | TensorFlow Lite 2.11.0 C++ runtime with Ruy ARM NEON matrix acceleration |
+| **Phase 8** | Inference Service & Application Development | **Completed** | Production C++ app `edge-classify`, helper `edgeml-run`, SysV service `S99edgeml` |
+| **Phase 9** | Security & Read-Only Root Filesystem | **Completed** | Read-only ext4 rootfs, OverlayFS on `/etc`, unprivileged user `edgeai` (UID 1001) |
+| **Phase 10** | System Boot & Deployment | **Completed** | QEMU ARM64 boot verified in 16.77s to serial login prompt (128 MB RAM limit) |
+| **Phase 11** | End-to-End Functional Testing | **Completed** | Consolidated verification suite `scripts/phase7_verify.sh` (15/15 PASS, 0 Failures) |
+| **Phase 12** | Performance Benchmarking & Evaluation | **Completed** | `docs/benchmarks.md` (99.10% rootfs reduction, 91.67% idle RAM reduction, 3.98 FPS) |
+| **Phase 13** | Git Reproducibility & Build Manifests | **Completed** | `docs/reproducibility.md`, `deliverables/build_manifest.md`, `SHA256SUMS.txt` |
+| **Phase 14** | Documentation & Final Project Report | **Completed** | `README.md` (23 sections), `docs/final_project_report.md` (8 chapters + refs) |
+| **Phase 15** | Final Verification & Submission Checklist | **Pending** | Final delivery packaging, SHA-256 verification, presentation defense prep |
 
 ---
 
-## 2. Completed Steps
+## 2. Key Phase Summaries
 
-### Phase 0: Workspace Inspection, Environment Verification & Architectural Foundation (Approved)
-1. Inspected workspace, host environment (Ubuntu 24.04.4 LTS on WSL2, 20 vCPUs, 7.6GB RAM, 951GB free disk).
-2. Verified pinned Buildroot 2025.02.10 tarball checksum (`f3de928ed368ef3dcadb97d4f4c1a9f49424a367759dba1d97c4c2bc5a22eab1`).
-3. Initialized Git repository on branch `main` (`1d06c8c`), created `.gitignore`, `.gitkeep` markers, and `scripts/check_host_env.sh`.
+### Phase 1–3: Requirements, Architecture & Baseline
+- Completed quantitative requirements and system architecture blueprints with 5 Mermaid diagrams.
+- Pinned Buildroot 2025.02.10 archive (`f3de928ed368ef3dcadb97d4f4c1a9f49424a367759dba1d97c4c2bc5a22eab1`).
+- Established stock Debian 13 (Trixie) ARM64 baseline in QEMU (2 vCPUs, Cortex-A53).
 
-### Phase 1: Requirements Analysis & Architectural Specification (Approved & Verified)
-1. Completed comprehensive requirements specification in `docs/requirements.md` (hardware, boot latency targets, memory footprint, stock Linux deficiencies, build system, kernel, TFLite/LiteRT, security, and benchmarking).
-2. Completed system architecture blueprint in `docs/architecture.md` with 5 Mermaid diagrams covering system layers, boot flow, storage/OverlayFS, ML pipeline, and security privilege dropping.
-3. Verified all Phase 1 requirements, added Raspberry Pi 4B selection justification (Section 3.1), explicit performance target thresholds (Section 4.1/4.2), and automated startup / classification criteria (Section 7.4).
+### Phase 4–6: Kernel, Toolchain & RootFS Build
+- Created validated out-of-tree defconfigs for QEMU emulation and Raspberry Pi 4B physical hardware.
+- Stripped unnecessary drivers from Linux 6.12.27, enabling built-in virtio block, net, ext4, and OverlayFS support.
+- Built cross-compilation toolchain: GCC 13.4.0, GNU Binutils 2.43.1, GNU C Library (`glibc`) 2.41.
 
-### Phase 2: Buildroot Configuration and Target Preparation (Approved)
-1. Extracted pinned Buildroot 2025.02.10 archive into `buildroot/buildroot-2025.02.10/`.
-2. Created `configs/raspberrypi4_64_edgeml_defconfig` (RPi 4B, 4GB, ARM64 Cortex-A72, glibc, GCC 13.4.0 C++17, BusyBox).
-3. Created `configs/qemu_aarch64_virt_edgeml_defconfig` (QEMU ARM64 virt emulation, glibc, GCC 13.4.0 C++17, BusyBox).
-4. Created build automation script `scripts/build.sh` and verified both defconfigs.
+### Phase 7–10: ML Framework, Application & Security Hardening
+- Integrated TensorFlow Lite 2.11.0 C++ runtime with Ruy ARM NEON SIMD engine.
+- Implemented production C++ classifier [`/usr/bin/edge-classify`](src/edge_classify.cpp) with zero third-party image library dependencies (custom PPM P3/P6 loader and bilinear resizer).
+- Enforced mount-time read-only rootfs (`/`) and ephemeral RAM-backed OverlayFS on `/etc` (`lowerdir=/run/overlay/etc_lower,upperdir=/run/overlay/etc_upper`).
+- Created unprivileged user `edgeai` (`UID 1001`, `GID 1001`) with login disabled.
 
-### Phase 3: Build Initial ARM64 Linux System for QEMU (Approved)
-1. Diagnosed and resolved Buildroot error rejecting spaces in `$PATH` caused by WSL importing Windows paths.
-2. Removed `host-qemu` from defconfig to leverage host QEMU 8.2.2.
-3. Cross-compiled kernel 6.12.27, glibc 2.41, BusyBox 1.37.0, and rootfs image.
-4. Verified clean boot to `buildroot login:` in QEMU virt machine.
+### Phase 11–12: Testing & Comparative Benchmarking
+- Automated 15-test verification suite via `scripts/phase7_verify.sh` achieving 15/15 PASS (0 failures).
+- Evaluated custom OS against stock Debian 13 under identical QEMU ARM64 Cortex-A53 conditions:
+  - **RootFS Content Reduction:** **99.10%** (2,414 MB $\to$ 21.60 MB `du -sh`).
+  - **Storage Image Footprint Reduction:** **98.12%** (3,825.4 MB $\to$ 71.86 MB).
+  - **System Idle RAM Reduction:** **91.67%** (156 MB $\to$ 13 MB `free -m`).
+  - **Package Count Reduction:** **94.31%** (404 $\to$ 23 packages; architectural comparison due to granularity).
+  - **Boot Latency:** **37.33% faster** (26.76 s $\to$ 16.77 s).
+  - **Dual-Thread Saturation Throughput:** **3.98 FPS vs 3.85 FPS** with **10.34% lower maximum observed latency**.
 
-### Phase 4: Root Filesystem Hardening & Storage/OverlayFS Setup (Approved)
-1. Configured root filesystem to mount read-only (`ro`) in `rootfs/etc/fstab` and `inittab`.
-2. Mounted volatile temporary filesystems as `tmpfs` on `/tmp` and `/run`.
-3. Implemented `/etc/init.d/S00overlay` to create an ephemeral OverlayFS upper layer for `/etc` backed by `tmpfs`.
-4. Hardened kernel parameters via `/etc/sysctl.d/99-security.conf` and created unprivileged system user `edgeai` (UID 1001).
-
-### Phase 5: Machine Learning Runtime Integration (Approved)
-1. Enabled TensorFlow Lite 2.11.0 C++ runtime in Buildroot with ARM NEON acceleration (Ruy GEMM matrix library).
-2. Integrated INT8 quantized MobileNetV2 model and ImageNet labels in `/usr/share/edgeml/models/`.
-3. Verified inference execution and memory footprint.
-
-### Phase 6: Edge Inference Application (Approved)
-1. Developed production C++ classification application [`/usr/bin/edge-classify`](src/edge_classify.cpp) with zero external image library dependencies (custom PPM P3/P6 loader and bilinear resizer).
-2. Supported multi-threading (`--threads N`), top-K output (`--top K`), and high-precision benchmark loops (`--benchmark N`).
-3. Verified execution against corrupt images, dimension mismatches, and multi-thread configurations.
-
-### Phase 7: Edge ML System Integration & Evaluation (Approved)
-1. Integrated boot-time service script `/etc/init.d/S99edgeml` with `/etc/default/edgeml` configuration.
-2. Automated 15-test verification suite via `scripts/phase7_verify.sh` achieving 15/15 PASS.
-3. Created release deliverables (`deliverables/images/`, `deliverables/config/`, `deliverables/package-manifest.json`).
-
-### Phase 8 Pre-requisites: Baseline Evaluation & Reproducibility Verification (Complete)
-1. **Stock Linux Baseline Evaluation:** Evaluated Debian GNU/Linux 13 (Trixie v13.7) running in matching QEMU ARM64 Cortex-A53 2-core setup.
-2. **Comparative Benchmark Report:** Updated `docs/benchmarks.md` with side-by-side empirical metrics, methodology notes, and verified reductions:
-   - **RootFS Content Reduction:** **99.10%** (2,414 MB vs 21.60 MB `du -sh`).
-   - **Storage Image Footprint Reduction:** **98.12%** (3,825.4 MB vs 71.86 MB).
-   - **System Idle RAM Reduction:** **91.67%** (156 MB vs 13 MB `free -m`).
-   - **Package Count Reduction:** **94.31%** (404 packages vs 23 built packages).
-   - **Boot Latency:** **37.33% faster** (26.76 s vs 16.77 s).
-   - **Dual-Thread Saturation Throughput:** **3.98 FPS vs 3.85 FPS** (Custom OS faster with 10.34% less tail jitter).
-3. **Reproducibility Verification:**
-   - Application bit-for-bit determinism verified: Rebuilt `edge-classify` matched target binary SHA-256 (`e04c77b7f240167d0de34259fa58626a4013c10b60876364a2a7fab6c971f03e`).
-   - Kernel release deliverable matched target image SHA-256 (`493da3b0d1a85549947f334f8419c2517872dc7dd4394e2ad015cedc768717e0`).
-   - Out-of-tree defconfig regeneration proved 100% Kconfig option identity.
-   - Build harness executed cleanly in empty environment (`env -i`).
-   - Generated `deliverables/build_manifest.md`, `deliverables/SHA256SUMS.txt`, `SHA256SUMS.txt`, and `docs/reproducibility.md`.
+### Phase 13–14: Reproducibility & Comprehensive Documentation
+- Proven application bit-for-bit determinism (`e04c77b7f240167d0de34259fa58626a4013c10b60876364a2a7fab6c971f03e`).
+- Proven kernel release deliverable bit-for-bit determinism (`493da3b0d1a85549947f334f8419c2517872dc7dd4394e2ad015cedc768717e0`).
+- Generated cryptographic manifests (`SHA256SUMS.txt`, `deliverables/build_manifest.md`, `deliverables/package-manifest.json`).
+- Updated [`README.md`](README.md) with 23 verified sections.
+- Completed [`docs/final_project_report.md`](docs/final_project_report.md) spanning 8 chapters, architecture models, testing matrices, and performance analyses.
 
 ---
 
-## 3. Remaining Tasks
+## 3. Physical Hardware Status Note
 
-- [x] **Phase 0:** Workspace Inspection, Environment Verification & Architectural Foundation (COMPLETED & VERIFIED)
-- [x] **Phase 1:** Requirements Analysis & Architectural Specification (COMPLETED & VERIFIED)
-- [x] **Phase 2:** Buildroot Configuration and Target Preparation (COMPLETED & VERIFIED)
-- [x] **Phase 3:** Build Initial ARM64 Linux System for QEMU (COMPLETED & VERIFIED)
-- [x] **Phase 4:** Root Filesystem Hardening & Storage/OverlayFS Setup (COMPLETED & VERIFIED)
-- [x] **Phase 5:** Machine Learning Runtime Integration (COMPLETED & VERIFIED)
-- [x] **Phase 6:** Edge Inference Application (COMPLETED & VERIFIED)
-- [x] **Phase 7:** Edge ML System Integration & Evaluation (COMPLETED & VERIFIED)
-- [x] **Baseline Evaluation & Reproducibility:** Stock Linux Benchmarks & Build Manifests (COMPLETED & VERIFIED)
-- [ ] **Phase 8:** Target A Hardware Build (Build full Raspberry Pi 4 Model B kernel 6.6, BCM2711 DTB, firmware, and generate `sdcard.img`) & Physical Comparative Benchmarking against Raspberry Pi OS Lite.
+> [!NOTE]
+> Physical hardware benchmarking on the Raspberry Pi 4 Model B (USB-C power analyzer measurements, BCM2711 junction temperature readings via `/sys/class/thermal/thermal_zone0/temp`, and thermal throttling checks via `vcgencmd get_throttled`) requires physical hardware flashing and has not yet been established. All reported benchmark figures reflect verified QEMU ARM64 software emulation.
 
 ---
 
 ## 4. Exact Next Step
 
-**Awaiting user approval to commit verified manifests and proceed to Phase 8:**  
-Configure and build Target A for physical hardware: Raspberry Pi 4 Model B (4GB RAM) using `configs/raspberrypi4_64_edgeml_defconfig` (Linux kernel 6.6.x, Broadcom BCM2711 device tree, GPU firmware, bootloader config, and bootable `sdcard.img`), and perform comparative benchmarking against standard Raspberry Pi OS Lite.
+**Phase 15: Final Verification & Submission Checklist:**  
+Execute final repository audit, verify submission archive integrity, and prepare project defense presentation checklist.
