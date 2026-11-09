@@ -247,13 +247,55 @@ The complete verification matrix reflects the empirical results recorded in [`de
 | **P7-14** | Security: OverlayFS on `/etc` | Verify writable ephemeral layer on `/etc` | Writes to `/etc` succeed without altering flash | Created `/etc/phase7_overlay_test` in `tmpfs` | **PASS** |
 | **P7-15** | Clean Teardown & Poweroff | Verify orderly service shutdown and unmount | OverlayFS tears down cleanly, system powers off | `Tearing down OverlayFS on /etc: OK` $\to$ poweroff | **PASS** |
 
-### 5.3 Manual Screenshot Guide
-For college project documentation and presentation defense, the following terminal screenshots should be captured manually from the running QEMU terminal:
-1. **Screenshot 1 — Cold Boot Sequence:** Showing kernel startup, `Run /sbin/init`, OverlayFS mount (`Setting up OverlayFS on /etc: OK`), and the clean `buildroot login:` prompt.
-2. **Screenshot 2 — Idle Memory Verification:** Terminal showing `free -m` (13 MB used) and `cat /proc/meminfo`.
-3. **Screenshot 3 — Edge Classification Output:** Running `edgeml-run sample.ppm -k 5` displaying the Top-5 predictions (*digital clock* 9.9881).
-4. **Screenshot 4 — Read-Only Filesystem Rejection:** Terminal showing `touch /test_fail` returning `Read-only file system`.
-5. **Screenshot 5 — Dual-Thread Benchmark:** Running `edge-classify --threads 2 --benchmark 30` showing latency statistics and `top -b` CPU saturation.
+### 5.3 Captured Manual Verification Evidence
+
+The following screenshots were captured from the running Buildroot ARM64 QEMU system. They provide direct visual evidence of boot completion, memory footprint, model inference, root filesystem protection, and benchmark execution. The CPU/process snapshot was captured after the benchmark had completed; it is an idle snapshot, not a measurement of CPU saturation during inference.
+
+#### Screenshot 1 — Cold Boot Completion and Login Prompt
+
+The terminal shows the final startup services, the Edge ML service disabled by configuration, and the Buildroot login prompt. The screenshot captures the end of the boot sequence.
+
+![Screenshot 1 — Cold boot completion and Buildroot login prompt.](screenshots/01_cold_boot_sequence.png){width=0.95\textwidth}
+
+\newpage
+
+#### Screenshot 2 — Idle RAM Usage
+
+`free -m` reports 113 MB total RAM, 11 MB used, 98 MB free, and 98 MB available; `/proc/meminfo` provides detailed kernel memory statistics. These are the values captured in this session (the broader performance table elsewhere in this report reflects the previously recorded measurement).
+
+![Screenshot 2 — `free -m` and `/proc/meminfo` output.](screenshots/02_idle_ram_usage.png){width=0.78\textwidth}
+
+\newpage
+
+#### Screenshot 3 — Top-5 Edge ML Classification
+
+`edgeml-run sample.ppm -k 5` completes successfully. The highest-ranked class is digital clock (Class ID 531, score 9.9881), followed by the other four displayed predictions.
+
+![Screenshot 3 — Top-5 MobileNetV2 INT8 predictions.](screenshots/03_ml_classification_top5.png){width=0.82\textwidth}
+
+\newpage
+
+#### Screenshot 4 — Read-Only Root Filesystem Rejection
+
+The attempt to create `/test_fail` fails with `Read-only file system`, and the shell returns exit status 1.
+
+![Screenshot 4 — Write attempt rejected by the read-only root filesystem.](screenshots/04_readonly_filesystem.png){width=0.95\textwidth}
+
+\newpage
+
+#### Screenshot 5 — Dual-Thread, 30-Iteration Benchmark
+
+`edge-classify --threads 2 --benchmark 30` reports an average latency of 592.84 ms and throughput of 1.69 inferences/sec in this captured run, with the process memory footprint included in the output.
+
+![Screenshot 5 — Dual-thread benchmark results.](screenshots/05_dual_thread_benchmark.png){width=0.82\textwidth}
+
+\newpage
+
+#### Supplementary Screenshot — CPU and Process Snapshot
+
+`top -b -n 1` was captured after the benchmark completed. The displayed CPU state is 90% idle in this snapshot, and the process table provides a point-in-time view of system processes. This is supplementary monitoring evidence and is not presented as CPU saturation during the benchmark.
+
+![Supplementary CPU usage and process snapshot.](screenshots/05_cpu_usage.png){width=0.82\textwidth}
 
 ---
 

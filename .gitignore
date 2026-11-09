@@ -23,3 +23,19 @@ downloads/*
 *.log
 .vscode/
 .idea/
+
+# Generated QEMU build output and download cache
+output_qemu/*
+!output_qemu/.gitkeep
+
+# Generated Buildroot output
+buildroot/buildroot-2025.02.10/
+
+# Buildroot source archive (keep local, avoid duplicate upload)
+buildroot/buildroot-2025.02.10.tar.gz
+
+# Generated root filesystem image (keep local)
+deliverables/images/rootfs.ext2
+
+# Windows metadata files
+*:Zone.Identifier
